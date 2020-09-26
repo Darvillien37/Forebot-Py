@@ -1,4 +1,4 @@
 
 .env
 err.log
-__pycashe__\\*
+__pycache__/*
