@@ -1,32 +1,18 @@
 import os
+import random
 
 import discord
 from dotenv import load_dotenv
-import random
+from discord.ext import commands
 
+#Load the enviroment variables
 load_dotenv()
 TOKEN = os.getenv("DISCORD_TOKEN")
 
-client = discord.Client()
+bot = commands.Bot(command_prefix=os.getenv("PREFIX"))
 
-@client.event
-async def on_ready():
-    print(f'{client.user} has connected to Discord!')
-    print('Connected to guilds:')
-    for guild in client.guilds:
-        print(f'\t-{guild.name}(id: {guild.id})')
-
-
-@client.event
-async def on_member_join(member):
-    await member.create_dm()
-    #await member.dm_channel.send(f'Hi {member.name}, welcome to my Discord server!')
-
-@client.event
-async def on_message(message):
-    if message.author == client.user:
-        return
-
+@bot.command(name='99', help='Responds with a random quote from Brooklyn 99')
+async def nine_nine(ctx):
     brooklyn_99_quotes = [
         'I\'m the human form of the 💯 emoji.',
         'Bingpot!',
@@ -36,20 +22,45 @@ async def on_message(message):
         ),
     ]
 
-    if message.content == '99!':
-        response = random.choice(brooklyn_99_quotes)
-        await message.channel.send(response)
-    elif message.content == 'raise-exception':
-        raise discord.DiscordException
+    responce = random.choice(brooklyn_99_quotes)
+    await ctx.send(responce)
 
-@client.event
-async def on_error(event, *args, **kwargs):
-    with open('err.log', 'a') as f:
-        if event == 'on_message':
-            f.write(f'Unhandled message {args[0]}\n')
-        else:
-            raise
+@bot.command(name='roll', help='Roll some dice.')
+async def roll(ctx, number_of_dice: int, number_of_sides: int):
+    dice = [
+        str(random.choice(range(1, number_of_sides + 1)))
+        for _ in range(number_of_dice)
+    ]
+    await ctx.send(','.join(dice))
+
+@bot.command(name='create-channel')
+@commands.has_role('Admin')
+async def create_channel(ctx, channel_name='real-python'):
+    guild = ctx.guild
+    existing_channel = discord.utils.get(guild.channels, name=channel_name)
+    if not existing_channel:
+        print(f'Creating new Channel: {channel_name}')
+        await guild.create_text_channel(channel_name)
 
 
+@bot.event
+async def on_command_error(ctx, error):
+    if isinstance(error, commands.errors.CheckFailure):
+        await ctx.send('You do not have the correct role for this command.')
 
-client.run(TOKEN)
+@bot.event
+async def on_ready():
+    print(f'{bot.user} has connected to Discord!')
+    print('Connected to guilds:')
+    for guild in bot.guilds:
+        print(f'\t-{guild.name}(id: {guild.id})')
+
+
+@bot.event
+async def on_member_join(member):
+    sys_chan = member.guild.system_channel
+    if (sys_chan is not None):
+        await member.guild.system_channel.send(f'It\'s Ya Boi, {member.mention}')
+
+
+bot.run(TOKEN)
