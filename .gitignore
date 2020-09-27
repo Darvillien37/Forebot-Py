@@ -2,3 +2,8 @@
 .env
 err.log
 __pycache__/*
+*/__pycache__/*
+*/*/__pycache__/*
+*/*/*/__pycache__/*
+log.log
+.vscode/settings.json
