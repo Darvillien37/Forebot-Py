@@ -1,5 +1,5 @@
 # Forebot-Py
-Forebot but now in Python 
+Forebot but now in Python!!
 
 ## Usage
 Checkout this repo, and create a '.env' file in the root.
