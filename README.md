@@ -10,6 +10,7 @@ Ensure that the .env has the following variables:
 
 ## Resource Folder
 The resource folder should have a structure like so:
-```.
+```
+.
 ├── Images_here.png/.jpg
 ```
