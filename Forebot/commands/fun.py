@@ -1,10 +1,13 @@
+import discord
+import os
 from discord.ext import commands
 import random
 
 
 class Fun(commands.Cog):
-    def __init__(self, bot):
+    def __init__(self, bot, res):
         self.bot = bot
+        self.res = res
 
     @commands.command(name='99', help='Responds with a random quote from \
         Brooklyn 99')
@@ -27,3 +30,11 @@ class Fun(commands.Cog):
             for _ in range(number_of_dice)
         ]
         await ctx.send(','.join(dice))
+
+    @commands.command(help='Responds with a Foreman!')
+    async def foreman(self, ctx):
+        files = os.listdir(self.res)
+        d = random.choice(files)
+        await ctx.send(
+            file=discord.File(
+                os.path.abspath(self.res + d)))

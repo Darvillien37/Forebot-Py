@@ -8,13 +8,14 @@ from .commands.fun import Fun
 
 
 class Bot():
-    def __init__(self, prefix, tkn):
-        self.bot = commands.Bot(command_prefix=prefix)
+    def __init__(self, prefix, tkn, res):
+        self.bot = commands.Bot(command_prefix=prefix, case_insensitive=True)
         self.token = tkn
+        self.resourceDirectory = res
 
         self.bot.add_cog(General(self.bot))
         self.bot.add_cog(Greetings(self.bot))
-        self.bot.add_cog(Fun(self.bot))
+        self.bot.add_cog(Fun(self.bot, self.resourceDirectory))
 
     def get_logger(self):
         return logging.getLogger('discord')

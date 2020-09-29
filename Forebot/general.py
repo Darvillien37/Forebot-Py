@@ -14,6 +14,7 @@ class General(commands.Cog):
 
     @commands.Cog.listener()
     async def on_command_error(self, ctx, error):
+        print(error)
         if isinstance(error, commands.errors.CheckFailure):
             await ctx.send('You do not have the correct role for this \
                 command.')

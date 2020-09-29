@@ -6,9 +6,10 @@ import logging
 # Load the environment variables
 load_dotenv()
 TOKEN = os.getenv("DISCORD_TOKEN")
+RESOURCE_FOLDER = os.getenv("RESOURCE_FOLDER")
 
 # Initialise the bot
-fBot = Bot(os.getenv("PREFIX"), TOKEN)
+fBot = Bot(os.getenv("PREFIX"), TOKEN, RESOURCE_FOLDER)
 
 # Create the logger for the bot
 logger = fBot.get_logger()
