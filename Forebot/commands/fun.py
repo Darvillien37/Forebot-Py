@@ -10,7 +10,7 @@ class Fun(commands.Cog):
         self.res = res
 
     @commands.command(name='99', help='Responds with a random quote from \
-        Brooklyn 99')
+Brooklyn 99')
     async def nine_nine(self, ctx):
         brooklyn_99_quotes = [
             'I\'m the human form of the 💯 emoji.',
