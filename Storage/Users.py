@@ -6,11 +6,18 @@ from . import XP
 def user_exists(users, user_id: str):
     '''
     Checks if the user exists, and if not creates it.
+    Returns true if the user already existed, false if they had to be created
     '''
     if user_id not in users:
         users[user_id] = {}
         users[user_id]['experience'] = 0
         users[user_id]['level'] = 0
+        users[user_id]['warnings'] = []
+        return False
+    if 'warnings' not in users[user_id]:
+        users[user_id]['warnings'] = []
+        return False
+    return True
 
 
 def GiveXP(userID: str, xpAmount):
@@ -62,3 +69,28 @@ def GiveXP(userID: str, xpAmount):
 
     # ToDo: Release Lock here
     return (leveledUp, userLevel)
+
+
+def get_warnings(userID, guildId):
+    '''
+    Get the warnings for a user in a guild
+    returns an array of warning objects
+    '''
+    userID = str(userID)
+
+    dataFile = path.join(path.dirname(__file__), 'Data/Users.json')
+    # ToDo Claim lock
+    with open(dataFile, 'r') as f:
+        users = json.load(f)
+    # check if the user exists, if not add them
+    if (not user_exists(users, userID)):
+        # if the user had to be created write back to the file
+        with open(dataFile, 'w') as f:
+            json.dump(users, f, indent=4)
+    # ToDo Release lock
+
+    result = []
+    for warning in users[userID]['warnings']:
+        if warning['guild'] == guildId:
+            result.append(warning)
+    return result

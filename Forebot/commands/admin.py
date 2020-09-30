@@ -1,5 +1,6 @@
 from discord.ext import commands
 import discord
+from Storage import Users
 
 
 class Admin(commands.Cog):
@@ -60,3 +61,12 @@ class Admin(commands.Cog):
         msg = f'{ctx.author} UNBANNED {mem_name} From {ctx.guild.name}'
         print(msg)
         self.logger.info(msg)
+
+    @commands.command(help='Ban a member from the server')
+    @commands.has_permissions(administrator=True)
+    async def getWarnings(self, ctx, member: discord.Member):
+        msg = f'{ctx.author} Getting warnings for {member.name}'\
+              f' From {ctx.guild.name}'
+        print(msg)
+        self.logger.info(msg)
+        Users.get_warnings(member.id, ctx.guild.id)
