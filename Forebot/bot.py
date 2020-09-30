@@ -1,10 +1,9 @@
 import logging
-
 from discord.ext import commands
-
 from .general import General
 from .commands.greetings import Greetings
 from .commands.fun import Fun
+from .commands.admin import Admin
 
 
 class Bot():
@@ -16,6 +15,7 @@ class Bot():
         self.bot.add_cog(General(self.bot, self.get_logger()))
         self.bot.add_cog(Greetings(self.bot))
         self.bot.add_cog(Fun(self.bot, self.resourceDirectory))
+        self.bot.add_cog(Admin(self.bot, self.get_logger()))
 
     def get_logger(self):
         return logging.getLogger('discord')
