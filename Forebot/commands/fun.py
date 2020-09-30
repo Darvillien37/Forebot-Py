@@ -35,6 +35,7 @@ Brooklyn 99')
     async def foreman(self, ctx):
         files = os.listdir(self.res)
         d = random.choice(files)
+        await ctx.message.delete()
         await ctx.send(
             file=discord.File(
                 os.path.abspath(self.res + d)))
