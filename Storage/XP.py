@@ -69,6 +69,3 @@ def GiveXP(userID: str, xpAmount):
 
 def __calculate_xp_for_next_level(currLvl):
     return pow(currLvl, 1.5) + 25
-
-
-
