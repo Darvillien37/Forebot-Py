@@ -1,6 +1,7 @@
 from random import randint
 import json
 from os import path
+from . import Users
 
 
 def GetXPFromMessage(message: str):
@@ -28,13 +29,13 @@ def GiveXP(userID: str, xpAmount):
     # ToDo: Claim Lock here
     # variable to return, assume false
     leveledUp = False
-    dataFile = path.join(path.dirname(__file__), 'Data/XP.json')
+    dataFile = path.join(path.dirname(__file__), 'Data/Users.json')
 
     with open(dataFile, 'r') as f:
         users = json.load(f)
 
     # check if the user exists, if not add them
-    __user_exists(users, userID)
+    Users.user_exists(users, userID)
 
     # get the users level data.
     userXP = users[userID]['experience']
@@ -70,8 +71,4 @@ def __calculate_xp_for_next_level(currLvl):
     return pow(currLvl, 1.5) + 25
 
 
-def __user_exists(users, userID):
-    if userID not in users:
-        users[userID] = {}
-        users[userID]['experience'] = 0
-        users[userID]['level'] = 0
+
