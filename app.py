@@ -2,6 +2,7 @@ import os
 from dotenv import load_dotenv
 from Forebot.bot import Bot
 import logging
+import Storage
 
 # Load the environment variables
 load_dotenv()

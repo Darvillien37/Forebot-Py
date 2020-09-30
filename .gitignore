@@ -8,3 +8,4 @@ __pycache__/*
 log.log
 .vscode/settings.json
 /res/*
+Storage/Data/XP.json

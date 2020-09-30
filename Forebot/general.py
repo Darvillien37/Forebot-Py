@@ -1,4 +1,5 @@
 from discord.ext import commands
+from Storage import XP
 
 
 class General(commands.Cog):
@@ -15,9 +16,23 @@ class General(commands.Cog):
 
     @commands.Cog.listener()
     async def on_command_error(self, ctx, error):
-        self.logger.error(f'{ctx.author} sent [{ctx.message.content}]\
- resulting in: [{error}]')
-        print(error)
+        msg = f'{ctx.author} sent [{ctx.message.content}] with error [{error}]'
+        self.logger.error(msg)
+        print(msg)
         if isinstance(error, commands.errors.CheckFailure):
-            await ctx.send('You do not have the correct role for this \
-                command.')
+            await ctx.send('You do not have the correct role for this '
+                           'command.')
+
+    @commands.Cog.listener()
+    async def on_message(self, message):
+        if message.author == self.bot.user:
+            return
+
+        xp = XP.GetXPFromMessage(message.content)
+
+        leveledUp, newLevel = XP.GiveXP(str(message.author.id), xp)
+
+        if(leveledUp):
+            await message.channel.send(f'Congratulations!!'
+                                       f' {message.author.mention}'
+                                       f' leveled up to lvl: {newLevel}')
