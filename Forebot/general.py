@@ -39,7 +39,7 @@ class General(commands.Cog):
             return
 
         # Get the amount of xp gained for the message
-        xp = XP.GetXPFromMessage(message.content)
+        xp = XP.getXPFromMessage(message.content)
         leveledUp, newLevel = Users.GiveXP(str(message.author.id), xp)
 
         # If the user leveled up, let them know and congratulate them
