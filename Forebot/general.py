@@ -1,5 +1,5 @@
 from discord.ext import commands
-from Storage import XP
+from Storage import Users, XP
 
 
 class General(commands.Cog):
@@ -40,7 +40,7 @@ class General(commands.Cog):
 
         # Get the amount of xp gained for the message
         xp = XP.GetXPFromMessage(message.content)
-        leveledUp, newLevel = XP.GiveXP(str(message.author.id), xp)
+        leveledUp, newLevel = Users.GiveXP(str(message.author.id), xp)
 
         # If the user leveled up, let them know and congratulate them
         if(leveledUp):
