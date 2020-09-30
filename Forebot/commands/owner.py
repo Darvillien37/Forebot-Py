@@ -16,26 +16,28 @@ class Owner(commands.Cog):
         if level == 'CRIT':
             self.logger.critical('Setting log level [CRITICAL]')
             self.logger.setLevel(logging.CRITICAL)
-            ctx.send(f'Log level changed to [CRITICAL]')
+            await ctx.send('Log level changed to [CRITICAL]')
+
         elif level == 'ERR':
             self.logger.error('Setting log level [ERROR]')
             self.logger.setLevel(logging.ERROR)
-            ctx.send(f'Log level changed to [ERROR]')
+            await ctx.send('Log level changed to [ERROR]')
 
         elif level == 'WARN':
             self.logger.warning('Setting log level [WARNING]')
             self.logger.setLevel(logging.WARNING)
-            ctx.send(f'Log level changed to [WARNING]')
+            await ctx.send('Log level changed to [WARNING]')
 
         elif level == 'INFO':
             self.logger.info('Setting log level [INFO]')
             self.logger.setLevel(logging.INFO)
-            ctx.send(f'Log level changed to [INFO]')
+            await ctx.send('Log level changed to [INFO]')
 
         elif level == 'DEBUG':
             self.logger.info('Setting log level [DEBUG]')
             self.logger.setLevel(logging.DEBUG)
-            ctx.send(f'Log level changed to [DEBUG]')
+            await ctx.send('Log level changed to [DEBUG]')
 
         else:
-            ctx.send(f'unknown[{level}] try [crit, err, warn, info, debug]')
+            await ctx.send(f'unknown[{level}] try [crit, err, warn, info,'
+                           'debug]')
