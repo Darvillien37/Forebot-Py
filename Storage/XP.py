@@ -4,6 +4,9 @@ from os import path
 
 
 def GetXPFromMessage(message: str):
+    '''
+    Get an amount of XP based off a message string
+    '''
     # the smallest maximum amount
     minMax = int(len(message) / 3)
     if minMax < 3:
@@ -13,6 +16,15 @@ def GetXPFromMessage(message: str):
 
 
 def GiveXP(userID: str, xpAmount):
+    '''
+    Give XP to a user.
+    Keyword arguments:
+    userID -- the users id to give xp to.
+    xpAmount -- the amount of xp to give to the user.
+    Returns:
+    leveledUp -- If the user leveled up.
+    userLevel -- The level of the user.
+    '''
     # ToDo: Claim Lock here
     # variable to return, assume false
     leveledUp = False

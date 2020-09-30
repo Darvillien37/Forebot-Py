@@ -6,6 +6,6 @@ __pycache__/*
 */*/__pycache__/*
 */*/*/__pycache__/*
 log.log
-.vscode/settings.json
+.vscode/*
 /res/*
 Storage/Data/XP.json

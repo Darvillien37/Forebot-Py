@@ -3,7 +3,16 @@ from Storage import XP
 
 
 class General(commands.Cog):
+    '''
+    A Cog class for general discord bot event listeners
+    '''
     def __init__(self, bot, logger):
+        '''
+        Constructor for the Cog General class.
+        Keyword arguments:
+        bot -- discord bot object.
+        logger -- the logger to log to.
+        '''
         self.bot = bot
         self.logger = logger
 
@@ -25,13 +34,15 @@ class General(commands.Cog):
 
     @commands.Cog.listener()
     async def on_message(self, message):
+        # if the message is from this bot, ignore it.
         if message.author == self.bot.user:
             return
 
+        # Get the amount of xp gained for the message
         xp = XP.GetXPFromMessage(message.content)
-
         leveledUp, newLevel = XP.GiveXP(str(message.author.id), xp)
 
+        # If the user leveled up, let them know and congratulate them
         if(leveledUp):
             await message.channel.send(f'Congratulations!!'
                                        f' {message.author.mention}'
