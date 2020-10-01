@@ -92,5 +92,6 @@ def get_warnings(userID, guildId):
     result = []
     for warning in users[userID]['warnings']:
         if warning['guild'] == guildId:
-            result.append(warning)
-    return result
+            result.append(f"[id ({warning['id']}) at {warning['dateTime']}] "
+                          f"{warning['warning']}")
+    return(result)

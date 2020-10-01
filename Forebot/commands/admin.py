@@ -62,11 +62,15 @@ class Admin(commands.Cog):
         print(msg)
         self.logger.info(msg)
 
-    @commands.command(help='Ban a member from the server')
+    @commands.command(help='Get the guild warnings for a member')
     @commands.has_permissions(administrator=True)
     async def getWarnings(self, ctx, member: discord.Member):
         msg = f'{ctx.author} Getting warnings for {member.name}'\
               f' From {ctx.guild.name}'
-        print(msg)
         self.logger.info(msg)
-        Users.get_warnings(member.id, ctx.guild.id)
+        warnings = Users.get_warnings(member.id, ctx.guild.id)
+        reply = f"Warnings for {member.name}:"
+        for warning in warnings:
+            reply = reply + "\n" + warning
+        await ctx.message.delete()
+        await ctx.send(reply)
