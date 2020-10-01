@@ -6,8 +6,7 @@ class Other(commands.Cog):
         self.bot = bot
         self.logger = logger
 
-    @commands.command(help='Get a link to the Forebot Trello'
-                      ' board, to check on progress')
+    @commands.command(help='Check the progress of Forebots development')
     async def trello(self, ctx):
         await ctx.message.delete()
         await ctx.send("Link to the Forebot trello board:"
