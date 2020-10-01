@@ -5,6 +5,7 @@ from .commands.greetings import Greetings
 from .commands.fun import Fun
 from .commands.admin import Admin
 from .commands.owner import Owner
+from .commands.other import Other
 
 
 class Bot():
@@ -18,6 +19,7 @@ class Bot():
         self.bot.add_cog(Fun(self.bot, self.resourceDirectory))
         self.bot.add_cog(Admin(self.bot, self.get_logger()))
         self.bot.add_cog(Owner(self.bot, self.get_logger()))
+        self.bot.add_cog(Other(self.bot, self.get_logger()))
 
     def get_logger(self):
         return logging.getLogger('discord')
