@@ -28,7 +28,7 @@ class Fun(commands.Cog):
     @commands.command(name='roll', help='Roll some dice.')
     async def roll(self, ctx, number_of_dice: int, number_of_sides: int):
         self.logger.info(f'{ctx.author.name} triggered \'99 [{number_of_dice}]'
-                    f'[{number_of_sides}]\' event')
+                         f'[{number_of_sides}]\' event')
         dice = [
             str(random.choice(range(1, number_of_sides + 1)))
             for _ in range(number_of_dice)
