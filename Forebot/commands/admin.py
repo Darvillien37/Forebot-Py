@@ -67,3 +67,9 @@ class Admin(commands.Cog):
             reply = reply + "\n" + warning
         await ctx.message.delete()
         await ctx.send(reply)
+
+    @commands.command(aliases=['warn'])
+    async def addWarning(self, ctx, member: discord.Member, *, warning: str):
+        Users.add_warning(member.id, ctx.guild.id, warning)
+        await ctx.send(f"You {member.mention} have been warnned!!")
+        await self.getWarnings(ctx, member)

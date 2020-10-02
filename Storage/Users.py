@@ -1,6 +1,7 @@
 from os import path
 import json
 from . import XP
+from datetime import datetime
 
 
 def user_exists(users, user_id: str):
@@ -95,3 +96,36 @@ def get_warnings(userID, guildId):
             result.append(f"[id ({warning['id']}) at {warning['dateTime']}] "
                           f"{warning['warning']}")
     return(result)
+
+
+def add_warning(user_id, guild_id, warning):
+    user_id = str(user_id)
+    now = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+    dataFile = path.join(path.dirname(__file__), 'Data/Users.json')
+
+    # ToDo Claim Lock
+    with open(dataFile, 'r') as f:
+        users = json.load(f)
+    # check if the user exists, if not add them
+    user_exists(users, user_id)
+
+    new_id = 0
+    ids = []
+    for warn in users[user_id]['warnings']:
+        ids.append(warn['id'])
+    if not ids:
+        new_id = 1
+    else:
+        new_id = max(ids) + 1
+
+    new_warning = {"id": new_id,
+                   "dateTime": now,
+                   "guild": guild_id,
+                   "warning": warning}
+
+    # {id: dateTime : guild : warning}
+    users[user_id]['warnings'].append(new_warning)
+
+    with open(dataFile, 'w') as f:
+        json.dump(users, f, indent=4)
+    # ToDo: Release Lock here
