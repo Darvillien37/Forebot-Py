@@ -11,10 +11,8 @@ class Admin(commands.Cog):
     @commands.command(help='Clear an amount of messages')
     @commands.has_permissions(manage_messages=True)
     async def clear(self, ctx, amount=5):
-        msg = f'{ctx.author} Triggered message purge ({amount})'\
-              f' [{ctx.guild.name}: {ctx.channel.name}]'
-        print(msg)
-        self.logger.info(msg)
+        self.logger.info(f'{ctx.author} Triggered message purge ({amount})'
+                         f' [{ctx.guild.name}: {ctx.channel.name}]')
         # To delete the message asked for as well
         amount = amount + 1
         await ctx.channel.purge(limit=amount)
@@ -22,20 +20,16 @@ class Admin(commands.Cog):
     @commands.command(help='Kick a member from the server')
     @commands.has_permissions(administrator=True)
     async def kick(self, ctx, member: discord.Member, *, reason='No Reason'):
-        msg = f'{ctx.author} Kicked {member.name} From {ctx.guild.name}'\
-              f' for [{reason}]'
-        print(msg)
-        self.logger.info(msg)
+        self.logger.info(f'{ctx.author} Kicked {member.name} From '
+                         f'{ctx.guild.name} for [{reason}]')
         # kick the member
         await member.kick(reason=reason)
 
     @commands.command(help='Ban a member from the server')
     @commands.has_permissions(administrator=True)
     async def ban(self, ctx, member: discord.Member, *, reason='No Reason'):
-        msg = f'{ctx.author} BANNED {member.name} From {ctx.guild.name}'\
-              f' for [{reason}]'
-        print(msg)
-        self.logger.info(msg)
+        self.logger.info(f'{ctx.author} BANNED {member.name} From '
+                         f'{ctx.guild.name} for [{reason}]')
         # Ban the member
         await member.ban(reason=reason)
 
@@ -58,16 +52,15 @@ class Admin(commands.Cog):
                 await ctx.send(f'Unbanned {user.mention}')
                 break
 
-        msg = f'{ctx.author} UNBANNED {mem_name} From {ctx.guild.name}'
-        print(msg)
-        self.logger.info(msg)
+        self.logger.info(f'{ctx.author} UNBANNED {mem_name} From '
+                         f'{ctx.guild.name}')
 
     @commands.command(help='Get the guild warnings for a member')
     @commands.has_permissions(administrator=True)
     async def getWarnings(self, ctx, member: discord.Member):
-        msg = f'{ctx.author} Getting warnings for {member.name}'\
-              f' From {ctx.guild.name}'
-        self.logger.info(msg)
+        self.logger.info(f'{ctx.author} Getting warnings for {member.name}'
+                         f' From {ctx.guild.name}')
+
         warnings = Users.get_warnings(member.id, ctx.guild.id)
         reply = f"Warnings for {member.name}:"
         for warning in warnings:

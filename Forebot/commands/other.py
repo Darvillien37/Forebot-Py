@@ -8,6 +8,7 @@ class Other(commands.Cog):
 
     @commands.command(help='Check the progress of Forebots development')
     async def trello(self, ctx):
+        self.logger.info(f'{ctx.author.name} triggered \'trello\' command')
         await ctx.message.delete()
         await ctx.send("Link to the Forebot trello board:"
                        " https://trello.com/b/GO9a8ZAd")
