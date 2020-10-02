@@ -37,13 +37,27 @@ class General(commands.Cog):
         # if the message is from this bot, ignore it.
         if message.author == self.bot.user:
             return
+        await self.__do_xp_give(message.content,
+                                message.author,
+                                message.channel)
 
+    @commands.Cog.listener()
+    async def on_raw_reaction_add(self, payload):
+        # if the message is from this bot, ignore it.
+        if payload.user_id == self.bot.user.id:
+            return
+        # Substitute the message id + user id for the message content
+        await self.__do_xp_give(str(payload.message_id) + str(payload.user_id),
+                                payload.member,
+                                self.bot.get_channel(payload.channel_id))
+
+    async def __do_xp_give(self, msg_content, author, channel):
         # Get the amount of xp gained for the message
-        xp = XP.getXPFromMessage(message.content)
-        leveledUp, newLevel = Users.GiveXP(str(message.author.id), xp)
+        xp = XP.getXPFromMessage(msg_content)
+        leveledUp, newLevel = Users.GiveXP(str(author.id), xp)
 
         # If the user leveled up, let them know and congratulate them
         if(leveledUp):
-            await message.channel.send(f'Congratulations!!'
-                                       f' {message.author.mention}'
-                                       f' leveled up to lvl: {newLevel}')
+            await channel.send(f'Congratulations!!'
+                               f' {author.mention}'
+                               f' leveled up to lvl: {newLevel}')
