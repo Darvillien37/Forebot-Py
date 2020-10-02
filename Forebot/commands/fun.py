@@ -13,7 +13,7 @@ class Fun(commands.Cog):
     @commands.command(name='99', help='Responds with a random quote from '
                       'Brooklyn 99')
     async def nine_nine(self, ctx):
-        self.logger(f'{ctx.author.name} triggered \'99\' event')
+        self.logger.info(f'{ctx.author.name} triggered \'99\' event')
         brooklyn_99_quotes = [
             'I\'m the human form of the 💯 emoji.',
             'Bingpot!',
@@ -27,7 +27,7 @@ class Fun(commands.Cog):
 
     @commands.command(name='roll', help='Roll some dice.')
     async def roll(self, ctx, number_of_dice: int, number_of_sides: int):
-        self.logger(f'{ctx.author.name} triggered \'99 [{number_of_dice}]'
+        self.logger.info(f'{ctx.author.name} triggered \'99 [{number_of_dice}]'
                     f'[{number_of_sides}]\' event')
         dice = [
             str(random.choice(range(1, number_of_sides + 1)))
@@ -37,7 +37,7 @@ class Fun(commands.Cog):
 
     @commands.command(help='Responds with a Foreman!')
     async def foreman(self, ctx):
-        self.logger(f'{ctx.author.name} triggered \'foreman\' event')
+        self.logger.info(f'{ctx.author.name} triggered \'foreman\' event')
         files = os.listdir(self.res)
         d = random.choice(files)
         await ctx.message.delete()
