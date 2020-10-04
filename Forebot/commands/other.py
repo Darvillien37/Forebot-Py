@@ -12,3 +12,10 @@ class Other(commands.Cog):
         await ctx.message.delete()
         await ctx.send("Link to the Forebot trello board:"
                        " https://trello.com/b/GO9a8ZAd")
+
+    @commands.command(help='link to 4bot source code')
+    async def github(self, ctx):
+        self.logger.info(f'{ctx.author.name} triggered \'github\' command')
+        await ctx.message.delete()
+        await ctx.send("Link to the Forebot github:"
+                       " https://github.com/Darvillien37/Forebot-Py")
