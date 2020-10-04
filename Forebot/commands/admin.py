@@ -55,7 +55,8 @@ class Admin(commands.Cog):
         self.logger.info(f'{ctx.author} UNBANNED {mem_name} From '
                          f'{ctx.guild.name}')
 
-    @commands.command(help='Get the guild warnings for a member')
+    @commands.command(aliases=['getWarn'],
+                      help='Get the guild warnings for a member')
     @commands.has_permissions(administrator=True)
     async def getWarnings(self, ctx, member: discord.Member):
         self.logger.info(f'{ctx.author} Getting warnings for {member.name}'
@@ -63,9 +64,14 @@ class Admin(commands.Cog):
 
         warnings = Users.get_warnings(member.id, ctx.guild.id)
 
-        reply = f"Warnings for {member.name}:"
-        await ctx.message.delete()
-        await ctx.send(reply)
+        embedVar = discord.Embed(title=f"({len(warnings)}) Warnings for"
+                                 f"{member.name}", color=0xff0000)
+        for warn in warnings:
+            embedVar.add_field(name=f"{warn['id']} - {warn['dateTime']}",
+                               value=warn['warning'],
+                               inline=False)
+
+        await ctx.send(embed=embedVar)
 
     @commands.command(aliases=['warn'])
     async def addWarning(self, ctx, member: discord.Member, *, warning: str):
