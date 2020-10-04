@@ -159,3 +159,33 @@ def remove_warning(user_id, warning_id):
         json.dump(users, f, indent=4)
     # ToDo: Release Lock here
     return True
+
+
+def edit_warning_text(user_id, warning_id, new_warning):
+    user_id = str(user_id)
+    dataFile = path.join(path.dirname(__file__), 'Data/Users.json')
+
+    # ToDo Claim Lock
+    with open(dataFile, 'r') as f:
+        users = json.load(f)
+    # check if the user exists, if not add them
+    user_exists(users, user_id)
+    # get warnings list
+    warnings = users[user_id]['warnings']
+
+    # check if id exists in warnings list
+    id_found = False
+    for warning in warnings:
+        if warning['id'] == warning_id:
+            warning['warning'] = new_warning
+            id_found = True
+            break
+
+    # if not exists, return false
+    if not id_found:
+        return False
+
+    with open(dataFile, 'w') as f:
+        json.dump(users, f, indent=4)
+    # ToDo: Release Lock here
+    return True

@@ -88,3 +88,14 @@ class Admin(commands.Cog):
             await ctx.send("Warning removed")
         else:
             await ctx.send("Warning ID not found")
+
+    @commands.command(aliases=['eWarning', 'eWarn'])
+    async def editWarning(self, ctx, member: discord.Member, id: int,
+                          *, new_warning):
+        self.logger.info(f'{ctx.author} editing warning {id} for '
+                         f'{member.name}')
+        edited = Users.edit_warning_text(member.id, id, new_warning)
+        if edited:
+            await ctx.send("Warning Edited")
+        else:
+            await ctx.send("Warning ID not found")
