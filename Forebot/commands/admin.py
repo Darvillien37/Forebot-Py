@@ -62,9 +62,8 @@ class Admin(commands.Cog):
                          f' From {ctx.guild.name}')
 
         warnings = Users.get_warnings(member.id, ctx.guild.id)
+
         reply = f"Warnings for {member.name}:"
-        for warning in warnings:
-            reply = reply + "\n" + warning
         await ctx.message.delete()
         await ctx.send(reply)
 
