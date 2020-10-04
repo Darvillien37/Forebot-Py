@@ -78,3 +78,13 @@ class Admin(commands.Cog):
         Users.add_warning(member.id, ctx.guild.id, warning)
         await ctx.send(f"You {member.mention} have been warnned!!")
         await self.getWarnings(ctx, member)
+
+    @commands.command(aliases=['remWarn', 'rWarn'])
+    async def removeWarning(self, ctx, member: discord.Member, id: int):
+        self.logger.info(f'{ctx.author} Removing warning {id} for '
+                         f'{member.name}')
+        removed = Users.remove_warning(member.id, id)
+        if removed:
+            await ctx.send("Warning removed")
+        else:
+            await ctx.send("Warning ID not found")
