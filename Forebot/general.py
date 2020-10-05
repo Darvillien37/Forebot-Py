@@ -41,6 +41,9 @@ class General(commands.Cog):
         # if the message is from this bot, ignore it.
         if message.author == self.bot.user:
             return
+        if message.author.bot:
+            return
+
         await self.__do_xp_give(message.content,
                                 message.author,
                                 message.channel)
