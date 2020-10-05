@@ -64,7 +64,7 @@ class Admin(commands.Cog):
 
         warnings = Users.get_warnings(member.id, ctx.guild.id)
 
-        embedVar = discord.Embed(title=f"({len(warnings)}) Warnings for"
+        embedVar = discord.Embed(title=f"({len(warnings)}) Warnings for "
                                  f"{member.name}", color=0xff0000)
         for warn in warnings:
             embedVar.add_field(name=f"{warn['id']} - {warn['dateTime']}",
