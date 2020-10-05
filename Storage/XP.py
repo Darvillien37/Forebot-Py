@@ -14,4 +14,4 @@ def getXPFromMessage(message: str):
 
 
 def calculate_xp_for_next_level(currLvl):
-    return pow(currLvl, 1.5) + 25
+    return (3 * pow(currLvl, 1.5)) + 100
