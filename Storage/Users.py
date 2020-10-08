@@ -189,3 +189,29 @@ def edit_warning_text(user_id, warning_id, new_warning):
         json.dump(users, f, indent=4)
     # ToDo: Release Lock here
     return True
+
+
+def get_info(user_id, guild_id):
+    user_id = str(user_id)
+
+    dataFile = path.join(path.dirname(__file__), 'Data/Users.json')
+    # ToDo Claim lock
+    with open(dataFile, 'r') as f:
+        users = json.load(f)
+    # check if the user exists, if not add them
+    if (not user_exists(users, user_id)):
+        # if the user had to be created write back to the file
+        with open(dataFile, 'w') as f:
+            json.dump(users, f, indent=4)
+    # ToDo Release lock
+    info = []
+    info.append(f"Level:{users[user_id]['level']}")
+    info.append(f"Experience:{users[user_id]['experience']}")
+    warnCount = 0
+    for warning in users[user_id]['warnings']:
+        if warning['guild'] == guild_id:
+            warnCount = warnCount + 1
+
+    info.append(f"Guild Warnings:{warnCount}")
+
+    return info
