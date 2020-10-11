@@ -9,6 +9,7 @@ class Fun(commands.Cog):
         self.bot = bot
         self.res = res
         self.logger = logger
+        self.lastForemanCmdCaller = None
 
     @commands.command(name='99', help='Responds with a random quote from '
                       'Brooklyn 99')
@@ -40,7 +41,11 @@ class Fun(commands.Cog):
         self.logger.info(f'{ctx.author.name} triggered \'foreman\' event')
         files = os.listdir(self.res)
         d = random.choice(files)
-        await ctx.message.delete()
+        if self.lastForemanCmdCaller == ctx.author:
+            await ctx.message.delete()
+        else:
+            self.lastForemanCmdCaller = ctx.author
+
         await ctx.send(
             file=discord.File(
                 os.path.abspath(self.res + d)))
