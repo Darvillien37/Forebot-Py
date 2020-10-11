@@ -6,6 +6,7 @@ from .commands.fun import Fun
 from .commands.admin import Admin
 from .commands.owner import Owner
 from .commands.other import Other
+from .loops.startUpLoops import StartUpLoops
 
 
 class Bot():
@@ -14,6 +15,9 @@ class Bot():
         self.token = tkn
         self.resourceDirectory = res
 
+        # loops
+        self.bot.add_cog(StartUpLoops(self.bot, self.get_logger()))
+        # Commands
         self.bot.add_cog(General(self.bot, self.get_logger()))
         self.bot.add_cog(Greetings(self.bot, self.get_logger()))
         self.bot.add_cog(Fun(self.bot, self.resourceDirectory,
