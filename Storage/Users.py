@@ -191,6 +191,21 @@ def edit_warning_text(user_id, warning_id, new_warning):
     return True
 
 
+def clear_expired_warnings():
+    dataFile = path.join(path.dirname(__file__), 'Data/Users.json')
+    with open(dataFile, 'r') as f:
+        users = json.load(f)
+
+    for user in users:
+        for warning in users[user]['warnings']:
+            warningDT = datetime.strptime(warning['dateTime'], "%d/%m/%Y %H:%M:%S")
+
+            warning_age = datetime.now() - warningDT
+            # if the warning is older than 30 days
+            if(warning_age.days > 30):
+                remove_warning(user, warning['id'])
+
+
 def get_info(user_id, guild_id):
     user_id = str(user_id)
 
