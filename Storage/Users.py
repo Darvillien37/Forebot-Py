@@ -230,3 +230,20 @@ def get_info(user_id, guild_id):
     info.append(f"Guild Warnings:{warnCount}")
 
     return info
+
+
+def force_update_users():
+    # force update the users data to have all the keys
+    dataFile = path.join(path.dirname(__file__), 'Data/Users.json')
+    # ToDo Claim lock
+    with open(dataFile, 'r') as f:
+        users = json.load(f)
+
+    for user_id in users:
+        user_exists(users, user_id)
+        # check if the user exists, if not add them
+
+    with open(dataFile, 'w') as f:
+        json.dump(users, f, indent=4)
+    # ToDo Release lock
+
