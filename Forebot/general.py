@@ -61,7 +61,7 @@ class General(commands.Cog):
     async def __do_xp_give(self, msg_content, author, channel):
         # Get the amount of xp gained for the message
         xp = XP.getXPFromMessage(msg_content)
-        leveledUp, newLevel = Users.GiveXP(str(author.id), xp)
+        leveledUp, newLevel = Users.GiveXP(str(author.id), xp, channel.guild.id)
 
         # If the user leveled up, let them know and congratulate them
         if(leveledUp):

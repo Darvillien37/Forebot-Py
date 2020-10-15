@@ -4,29 +4,44 @@ from . import XP
 from datetime import datetime
 
 
-def user_exists(users, user_id: str):
+def user_exists(users, user_id: str, guild_id=None):
     '''
     Checks if the user exists, and if not creates it.
-    Returns true if the user already existed, false if they had to be created
+    Returns true if the user already existed, false if they had to be created or modified
     '''
+    # assume users did not have to be modified
+    modified: bool = False
+
     if user_id not in users:
         users[user_id] = {}
         users[user_id]['experience'] = 0
         users[user_id]['level'] = 0
+        users[user_id]['inGuilds'] = []
         users[user_id]['warnings'] = []
-        return False
+        modified = True
+
+    if 'inGuilds' not in users[user_id]:
+        users[user_id]['inGuilds'] = []
+        modified = True
+    if (guild_id is not None) and (guild_id not in users[user_id]['inGuilds']):
+        users[user_id]['inGuilds'].append(guild_id)
+        modified = True
+
     if 'warnings' not in users[user_id]:
         users[user_id]['warnings'] = []
-        return False
-    return True
+        modified = True
+
+    # flip due to the nature of how this method returns
+    return not modified
 
 
-def GiveXP(userID: str, xpAmount):
+def GiveXP(userID: str, xpAmount, guild_id):
     '''
     Give XP to a user.
     Keyword arguments:
     userID -- the users id to give xp to.
     xpAmount -- the amount of xp to give to the user.
+    guild_id -- force the user in the guild they wrote in (shouldn't be in here but meh)
     Returns:
     leveledUp -- If the user leveled up.
     userLevel -- The level of the user.
@@ -40,7 +55,7 @@ def GiveXP(userID: str, xpAmount):
         users = json.load(f)
 
     # check if the user exists, if not add them
-    user_exists(users, userID)
+    user_exists(users, userID, guild_id)
 
     # get the users level data.
     userXP = users[userID]['experience']
@@ -84,7 +99,7 @@ def get_warnings(userID, guildId):
     with open(dataFile, 'r') as f:
         users = json.load(f)
     # check if the user exists, if not add them
-    if (not user_exists(users, userID)):
+    if (not user_exists(users, userID, guildId)):
         # if the user had to be created write back to the file
         with open(dataFile, 'w') as f:
             json.dump(users, f, indent=4)
@@ -106,7 +121,7 @@ def add_warning(user_id, guild_id, warning):
     with open(dataFile, 'r') as f:
         users = json.load(f)
     # check if the user exists, if not add them
-    user_exists(users, user_id)
+    user_exists(users, user_id, guild_id)
 
     new_id = 0
     ids = []
@@ -214,7 +229,7 @@ def get_info(user_id, guild_id):
     with open(dataFile, 'r') as f:
         users = json.load(f)
     # check if the user exists, if not add them
-    if (not user_exists(users, user_id)):
+    if (not user_exists(users, user_id, guild_id)):
         # if the user had to be created write back to the file
         with open(dataFile, 'w') as f:
             json.dump(users, f, indent=4)
