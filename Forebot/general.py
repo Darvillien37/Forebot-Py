@@ -28,6 +28,8 @@ class General(commands.Cog):
         msg = f'{ctx.author} sent [{ctx.message.content}] with error [{error}]'
         self.logger.error(msg)
         print(msg)
+        if isinstance(error, commands.errors.CommandNotFound):
+            return
         if isinstance(error, commands.errors.CheckFailure):
             await ctx.send('You do not have the correct role for this '
                            'command.')
