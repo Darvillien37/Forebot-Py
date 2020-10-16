@@ -28,6 +28,8 @@ class General(commands.Cog):
         msg = f'{ctx.author} sent [{ctx.message.content}] with error [{error}]'
         self.logger.error(msg)
         print(msg)
+        if isinstance(error, commands.errors.CommandNotFound):
+            return
         if isinstance(error, commands.errors.CheckFailure):
             await ctx.send('You do not have the correct role for this '
                            'command.')
@@ -61,7 +63,7 @@ class General(commands.Cog):
     async def __do_xp_give(self, msg_content, author, channel):
         # Get the amount of xp gained for the message
         xp = XP.getXPFromMessage(msg_content)
-        leveledUp, newLevel = Users.GiveXP(str(author.id), xp)
+        leveledUp, newLevel = Users.GiveXP(str(author.id), xp, channel.guild.id)
 
         # If the user leveled up, let them know and congratulate them
         if(leveledUp):
