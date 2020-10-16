@@ -274,18 +274,11 @@ def top_ten(guild_id):
     for user_id in users:
         if guild_id in users[user_id]['inGuilds']:
             users_in_guild.append({
-                    "userID": user_id,
-                    "experience": users[user_id]['experience'],
-                    "level": users[user_id]['level']
+                    "ID": user_id,
+                    "level": users[user_id]['level'],
+                    "experience": users[user_id]['experience']
                 })
 
-    for u in users_in_guild:
-        print(u)
-    print('break')
-
-    # get top 10
-    sorted_list = sorted(users_in_guild, key=lambda k: (int(k['level']), int(k["experience"])), reverse=True)[:10]
-    for u in sorted_list:
-        print(u)
-    print('break')
-
+    # sort and get the top 10
+    sorted_top_ten = sorted(users_in_guild, key=lambda k: (int(k['level']), int(k["experience"])), reverse=True)[:10]
+    return sorted_top_ten
