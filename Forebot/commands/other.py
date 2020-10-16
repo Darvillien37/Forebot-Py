@@ -50,10 +50,15 @@ class Other(commands.Cog):
             member = ctx.guild.get_member(int(user['ID']))
             if member is None:
                 continue
+            # prefer guild nicknames
+            if member.nick is None:
+                name = member.name
+            else:
+                name = member.nick
 
-            myEmbed.add_field(name=member.name,
-                              value=f"Level: {user['level']}\n"
-                                    f"Exp.:  {user['experience']}",
+            myEmbed.add_field(name=name,
+                              value=f"Lvl: {user['level']}\n"
+                                    f"Exp: {user['experience']}",
                               inline=True)
 
         await ctx.send(embed=myEmbed)
