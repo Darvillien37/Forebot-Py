@@ -263,6 +263,44 @@ def force_update_users():
     # ToDo Release lock
 
 
+def add_guild(user_id, guild_id):
+    user_id = str(user_id)
+    dataFile = path.join(path.dirname(__file__), 'Data/Users.json')
+
+    # ToDo Claim Lock
+    with open(dataFile, 'r') as f:
+        users = json.load(f)
+    # check if the user exists, if not add them
+    user_exists(users, user_id)
+
+    if guild_id not in users[user_id]['inGuilds']:
+        users[user_id]['inGuilds'].append(guild_id)
+
+    with open(dataFile, 'w') as f:
+        json.dump(users, f, indent=4)
+    # ToDo: Release Lock here
+
+
+def remove_guild(user_id, guild_id):
+    user_id = str(user_id)
+    dataFile = path.join(path.dirname(__file__), 'Data/Users.json')
+
+    # ToDo Claim Lock
+    with open(dataFile, 'r') as f:
+        users = json.load(f)
+
+    modified = False
+    if user_id in users:
+        if guild_id in users[user_id]['inGuilds']:
+            users[user_id]['inGuilds'].remove(guild_id)
+            modified = True
+
+    if modified:
+        with open(dataFile, 'w') as f:
+            json.dump(users, f, indent=4)
+    # ToDo: Release Lock here
+
+
 def top_ten(guild_id):
     dataFile = path.join(path.dirname(__file__), 'Data/Users.json')
     # ToDo Claim lock

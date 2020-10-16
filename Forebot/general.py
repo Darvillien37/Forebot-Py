@@ -23,6 +23,12 @@ class General(commands.Cog):
         for guild in self.bot.guilds:
             print(f'\t-{guild.name}(id: {guild.id})')
 
+            # initialise all members in the guild to the database
+            for member in guild.members:
+                if not member.bot:
+                    # forces
+                    Users.add_guild(member.id, guild.id)
+
     @commands.Cog.listener()
     async def on_command_error(self, ctx, error):
         msg = f'{ctx.author} sent [{ctx.message.content}] with error [{error}]'
