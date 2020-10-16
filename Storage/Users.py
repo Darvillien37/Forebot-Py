@@ -262,3 +262,30 @@ def force_update_users():
         json.dump(users, f, indent=4)
     # ToDo Release lock
 
+
+def top_ten(guild_id):
+    dataFile = path.join(path.dirname(__file__), 'Data/Users.json')
+    # ToDo Claim lock
+    with open(dataFile, 'r') as f:
+        users = json.load(f)
+    # ToDo Release lock
+
+    users_in_guild = []
+    for user_id in users:
+        if guild_id in users[user_id]['inGuilds']:
+            users_in_guild.append({
+                    "userID": user_id,
+                    "experience": users[user_id]['experience'],
+                    "level": users[user_id]['level']
+                })
+
+    for u in users_in_guild:
+        print(u)
+    print('break')
+
+    # get top 10
+    sorted_list = sorted(users_in_guild, key=lambda k: (int(k['level']), int(k["experience"])), reverse=True)[:10]
+    for u in sorted_list:
+        print(u)
+    print('break')
+

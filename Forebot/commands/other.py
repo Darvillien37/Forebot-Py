@@ -34,3 +34,7 @@ class Other(commands.Cog):
             sLine = line.split(':')
             myEmbed.add_field(name=sLine[0], value=sLine[1], inline=True)
         await ctx.send(embed=myEmbed)
+
+    @commands.command(aliases=['tt'], help='Get the top 10 people in the guild')
+    async def topTen(self, ctx):
+        Users.top_ten(ctx.guild.id)
