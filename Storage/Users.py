@@ -234,9 +234,10 @@ def get_info(user_id, guild_id):
         with open(dataFile, 'w') as f:
             json.dump(users, f, indent=4)
     # ToDo Release lock
+    xp_for_next_level = int(XP.calculate_xp_for_next_level(users[user_id]['level']))
     info = []
     info.append(f"Level:{users[user_id]['level']}")
-    info.append(f"Experience:{users[user_id]['experience']}")
+    info.append(f"Experience:{users[user_id]['experience']} / {xp_for_next_level}")
     warnCount = 0
     for warning in users[user_id]['warnings']:
         if warning['guild'] == guild_id:
@@ -319,4 +320,6 @@ def top_ten(guild_id):
 
     # sort and get the top 10
     sorted_top_ten = sorted(users_in_guild, key=lambda k: (int(k['level']), int(k["experience"])), reverse=True)[:10]
+    for tt in sorted_top_ten:
+        tt['experience'] = f"{tt['experience']} / {int(XP.calculate_xp_for_next_level(tt['level']))}"
     return sorted_top_ten
