@@ -1,3 +1,4 @@
+![Python package](https://github.com/Darvillien37/Forebot-Py/workflows/Python%20package/badge.svg)
 # Forebot-Py
 Forebot but now in Python!!
 
