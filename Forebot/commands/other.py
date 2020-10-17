@@ -57,7 +57,7 @@ class Other(commands.Cog):
                 name = member.nick
 
             myEmbed.add_field(name=name,
-                              value=f"Lvl: {user['level']}\n" 
+                              value=f"Lvl: {user['level']}\n"
                                     f"Exp: {user['experience']}",
                               inline=True)
 
