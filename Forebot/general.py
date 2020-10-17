@@ -26,7 +26,6 @@ class General(commands.Cog):
             # initialise all members in the guild to the database
             for member in guild.members:
                 if not member.bot:
-                    # forces
                     Users.add_guild(member.id, guild.id)
 
     @commands.Cog.listener()

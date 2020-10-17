@@ -6,6 +6,7 @@ from .commands.fun import Fun
 from .commands.admin import Admin
 from .commands.owner import Owner
 from .commands.other import Other
+from .commands.EasterEggs import EasterEggs
 from .loops.startUpLoops import StartUpLoops
 from .loops.warningLoops import WarningLoops
 
@@ -22,11 +23,11 @@ class Bot():
         # Commands
         self.bot.add_cog(General(self.bot, self.get_logger()))
         self.bot.add_cog(Greetings(self.bot, self.get_logger()))
-        self.bot.add_cog(Fun(self.bot, self.resourceDirectory,
-                             self.get_logger()))
+        self.bot.add_cog(Fun(self.bot, self.resourceDirectory, self.get_logger()))
         self.bot.add_cog(Admin(self.bot, self.get_logger()))
         self.bot.add_cog(Owner(self.bot, self.get_logger()))
         self.bot.add_cog(Other(self.bot, self.get_logger()))
+        self.bot.add_cog(EasterEggs(self.bot, self.get_logger()))
 
     def get_logger(self):
         return logging.getLogger('discord')
