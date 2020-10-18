@@ -1,4 +1,5 @@
 import logging
+import discord
 from discord.ext import commands
 from .general import General
 from .commands.greetings import Greetings
@@ -13,7 +14,7 @@ from .loops.warningLoops import WarningLoops
 
 class Bot():
     def __init__(self, prefix, tkn, res):
-        self.bot = commands.Bot(command_prefix=prefix, case_insensitive=True)
+        self.bot = commands.Bot(command_prefix=prefix, case_insensitive=True, intents=discord.Intents.all())
         self.token = tkn
         self.resourceDirectory = res
 
