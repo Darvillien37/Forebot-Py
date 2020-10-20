@@ -36,12 +36,12 @@ class General(commands.Cog):
         if isinstance(error, commands.errors.CommandNotFound):
             return
         if isinstance(error, commands.errors.CheckFailure):
-            await ctx.send('You do not have the correct role for this '
-                           'command.')
+            await ctx.send('You do not have the correct role for this command.')
+            return
         if isinstance(error, commands.errors.CommandError):
             await ctx.send(f"Somthing's not right there buddy! Try typing:"
-                           f"```'{self.bot.command_prefix}help "
-                           f"{ctx.command.name}'```")
+                           f"```'{self.bot.command_prefix}help {ctx.command.name}'```")
+            return
 
     @commands.Cog.listener()
     async def on_message(self, message):
