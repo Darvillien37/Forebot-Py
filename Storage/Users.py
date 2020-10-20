@@ -1,7 +1,12 @@
+import os
 from os import path
 import json
 from . import XP
 from datetime import datetime
+
+
+def __get_users_data():
+    return path.join(f'{os.getenv("DATA_FOLDER")}/Users.json')
 
 
 def user_exists(users, user_id: str, guild_id=None):
@@ -49,7 +54,7 @@ def GiveXP(userID: str, xpAmount, guild_id):
     # ToDo: Claim Lock here
     # variable to return, assume false
     leveledUp = False
-    dataFile = path.join(path.dirname(__file__), 'Data/Users.json')
+    dataFile = __get_users_data()
 
     with open(dataFile, 'r') as f:
         users = json.load(f)
@@ -94,7 +99,7 @@ def get_warnings(userID, guildId):
     '''
     userID = str(userID)
 
-    dataFile = path.join(path.dirname(__file__), 'Data/Users.json')
+    dataFile = __get_users_data()
     # ToDo Claim lock
     with open(dataFile, 'r') as f:
         users = json.load(f)
@@ -115,7 +120,7 @@ def get_warnings(userID, guildId):
 def add_warning(user_id, guild_id, warning):
     user_id = str(user_id)
     now = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-    dataFile = path.join(path.dirname(__file__), 'Data/Users.json')
+    dataFile = __get_users_data()
 
     # ToDo Claim Lock
     with open(dataFile, 'r') as f:
@@ -147,7 +152,7 @@ def add_warning(user_id, guild_id, warning):
 
 def remove_warning(user_id, warning_id):
     user_id = str(user_id)
-    dataFile = path.join(path.dirname(__file__), 'Data/Users.json')
+    dataFile = __get_users_data()
 
     # ToDo Claim Lock
     with open(dataFile, 'r') as f:
@@ -178,7 +183,7 @@ def remove_warning(user_id, warning_id):
 
 def edit_warning_text(user_id, warning_id, new_warning):
     user_id = str(user_id)
-    dataFile = path.join(path.dirname(__file__), 'Data/Users.json')
+    dataFile = __get_users_data()
 
     # ToDo Claim Lock
     with open(dataFile, 'r') as f:
@@ -207,7 +212,7 @@ def edit_warning_text(user_id, warning_id, new_warning):
 
 
 def clear_expired_warnings():
-    dataFile = path.join(path.dirname(__file__), 'Data/Users.json')
+    dataFile = __get_users_data()
     with open(dataFile, 'r') as f:
         users = json.load(f)
 
@@ -224,7 +229,7 @@ def clear_expired_warnings():
 def get_info(user_id, guild_id):
     user_id = str(user_id)
 
-    dataFile = path.join(path.dirname(__file__), 'Data/Users.json')
+    dataFile = __get_users_data()
     # ToDo Claim lock
     with open(dataFile, 'r') as f:
         users = json.load(f)
@@ -250,7 +255,7 @@ def get_info(user_id, guild_id):
 
 def force_update_users():
     # force update the users data to have all the keys
-    dataFile = path.join(path.dirname(__file__), 'Data/Users.json')
+    dataFile = __get_users_data()
     # ToDo Claim lock
     with open(dataFile, 'r') as f:
         users = json.load(f)
@@ -266,7 +271,7 @@ def force_update_users():
 
 def add_guild(user_id, guild_id):
     user_id = str(user_id)
-    dataFile = path.join(path.dirname(__file__), 'Data/Users.json')
+    dataFile = __get_users_data()
 
     # ToDo Claim Lock
     with open(dataFile, 'r') as f:
@@ -284,7 +289,7 @@ def add_guild(user_id, guild_id):
 
 def remove_guild(user_id, guild_id):
     user_id = str(user_id)
-    dataFile = path.join(path.dirname(__file__), 'Data/Users.json')
+    dataFile = __get_users_data()
 
     # ToDo Claim Lock
     with open(dataFile, 'r') as f:
@@ -303,7 +308,7 @@ def remove_guild(user_id, guild_id):
 
 
 def top_ten(guild_id):
-    dataFile = path.join(path.dirname(__file__), 'Data/Users.json')
+    dataFile = __get_users_data()
     # ToDo Claim lock
     with open(dataFile, 'r') as f:
         users = json.load(f)

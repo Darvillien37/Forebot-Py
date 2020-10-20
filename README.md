@@ -8,6 +8,7 @@ Ensure that the .env has the following variables:
 1. DISCORD_TOKEN=<YOUR TOKEN HERE>
 2. PREFIX=<BOTS PREFIX HERE>
 3. RESOURCE_FOLDER=<THE LOCATION TO THE RESOURCE FOLDER>
+4. DATA_FOLDER=<THE LOCATION TO THE DATA FOLDER>
 
 ## Resource Folder
 The resource folder should have a structure like so:
@@ -15,3 +16,6 @@ The resource folder should have a structure like so:
 .
 ├── Images_here.png/.jpg
 ```
+
+## Data folder
+The path MUST exist, but the files will be created if not.

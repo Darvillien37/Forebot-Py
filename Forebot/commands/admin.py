@@ -55,8 +55,7 @@ class Admin(commands.Cog):
         self.logger.info(f'{ctx.author} UNBANNED {mem_name} From '
                          f'{ctx.guild.name}')
 
-    @commands.command(aliases=['getWarn'],
-                      help='Get the guild warnings for a member')
+    @commands.command(aliases=['getWarn'], help='Get the guild warnings for a member')
     @commands.has_permissions(administrator=True)
     async def getWarnings(self, ctx, member: discord.Member):
         self.logger.info(f'{ctx.author} Getting warnings for {member.name}'
@@ -74,12 +73,14 @@ class Admin(commands.Cog):
         await ctx.send(embed=embedVar)
 
     @commands.command(aliases=['warn'])
+    @commands.has_permissions(administrator=True)
     async def addWarning(self, ctx, member: discord.Member, *, warning: str):
         Users.add_warning(member.id, ctx.guild.id, warning)
         await ctx.send(f"You {member.mention} have been warnned!!")
         await self.getWarnings(ctx, member)
 
     @commands.command(aliases=['remWarn', 'rWarn'])
+    @commands.has_permissions(administrator=True)
     async def removeWarning(self, ctx, member: discord.Member, id: int):
         self.logger.info(f'{ctx.author} Removing warning {id} for '
                          f'{member.name}')
@@ -90,6 +91,7 @@ class Admin(commands.Cog):
             await ctx.send("Warning ID not found")
 
     @commands.command(aliases=['eWarning', 'eWarn'])
+    @commands.has_permissions(administrator=True)
     async def editWarning(self, ctx, member: discord.Member, id: int,
                           *, new_warning):
         self.logger.info(f'{ctx.author} editing warning {id} for '
