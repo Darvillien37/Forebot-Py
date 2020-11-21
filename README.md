@@ -14,7 +14,12 @@ Ensure that the .env has the following variables:
 The resource folder should have a structure like so:
 ```
 .
-├── Images_here.png/.jpg
+├── foreman
+|   ├── Images_here.png/.jpg (images)
+|   └── Vids.mjpg (videos)
+└── chaz
+    ├── Images_here.png/.jpg (images)
+    └── Vids.mjpg (videos)
 ```
 
 ## Data folder

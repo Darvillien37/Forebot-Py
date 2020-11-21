@@ -39,7 +39,7 @@ class Fun(commands.Cog):
     @commands.command(help='Responds with a Foreman!')
     async def foreman(self, ctx):
         self.logger.info(f'{ctx.author.name} triggered \'foreman\' event')
-        files = os.listdir(self.res)
+        files = os.listdir(self.res + '\\foreman\\')
         d = random.choice(files)
         if self.lastForemanCmdCaller == ctx.author:
             await ctx.message.delete()
@@ -48,4 +48,18 @@ class Fun(commands.Cog):
 
         await ctx.send(
             file=discord.File(
-                os.path.abspath(self.res + d)))
+                os.path.abspath(self.res + '\\foreman\\' + d)))
+
+    @commands.command(help='Responds with a Chaz!')
+    async def chaz(self, ctx):
+        self.logger.info(f'{ctx.author.name} triggered \'Chaz\' event')
+        files = os.listdir(self.res + '\\chaz\\')
+        d = random.choice(files)
+        if self.lastForemanCmdCaller == ctx.author:
+            await ctx.message.delete()
+        else:
+            self.lastForemanCmdCaller = ctx.author
+
+        await ctx.send(
+            file=discord.File(
+                os.path.abspath(self.res + '\\chaz\\' + d)))
