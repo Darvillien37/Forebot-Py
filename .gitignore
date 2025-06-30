@@ -9,3 +9,5 @@ log.log
 .vscode/*
 /res/*
 Storage/Data/*
+config.json
+*.log

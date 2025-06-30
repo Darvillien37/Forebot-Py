@@ -1,8 +1,10 @@
+import discord
+from Database import Database
+import XP
 from discord.ext import commands
-from Storage import Users, XP
 
 
-class General(commands.Cog):
+class Events(commands.Cog):
     '''
     A Cog class for general discord bot event listeners
     '''
@@ -18,15 +20,11 @@ class General(commands.Cog):
 
     @commands.Cog.listener()
     async def on_ready(self):
+        await self.bot.tree.sync()  # Sync the slash commands with Discord
         print(f'{self.bot.user} has connected to Discord!')
         print('Connected to guilds:')
         for guild in self.bot.guilds:
             print(f'\t-{guild.name}(id: {guild.id})')
-
-            # initialise all members in the guild to the database
-            for member in guild.members:
-                if not member.bot:
-                    Users.add_guild(member.id, guild.id)
 
     @commands.Cog.listener()
     async def on_command_error(self, ctx, error):
@@ -39,7 +37,7 @@ class General(commands.Cog):
             await ctx.send('You do not have the correct role for this command.')
             return
         if isinstance(error, commands.errors.CommandError):
-            await ctx.send(f"Somthing's not right there buddy! Try typing:"
+            await ctx.send(f"Something's not right there buddy! Try typing:"
                            f"```'{self.bot.command_prefix}help {ctx.command.name}'```")
             return
 
@@ -67,11 +65,27 @@ class General(commands.Cog):
 
     async def __do_xp_give(self, msg_content, author, channel):
         # Get the amount of xp gained for the message
-        xp = XP.getXPFromMessage(msg_content)
-        leveledUp, newLevel = Users.GiveXP(str(author.id), xp, channel.guild.id)
+        xp_gained = XP.get_xp_from_message(msg_content)
+        user = Database.get_user(author.id)
+        # print(user)
+        user_id, xp, level, coins = user
+        xp += xp_gained
 
-        # If the user leveled up, let them know and congratulate them
-        if(leveledUp):
-            await channel.send(f'Congratulations!!'
-                               f' {author.mention}'
-                               f' leveled up to lvl: {newLevel}')
+        threshold = XP.get_xp_threshold(level)
+        if xp >= threshold:
+            xp = 0
+            level += 1
+            tier = Database.roll_loot_tier()
+            Database.add_lootbox(user_id, tier)
+            color = discord.Color(Database.LOOT_TIERS[tier]["color"])
+            embed = discord.Embed(
+                title="🆙 Level Up!",
+                description=(
+                    f"{author.mention} reached **Level {level}**!\n"
+                    f"🎁 You've earned a **{tier.title().upper()} Lootbox**!"
+                ),
+                color=color
+            )
+            await channel.send(embed=embed)
+
+        Database.update_user(user_id, xp, level, coins)
