@@ -10,6 +10,7 @@ from commands.Economy import Economy
 from loops.startUpLoops import StartUpLoops
 from Events import Events
 from commands.greetings import Greetings
+from Lootboxes.Lootboxes import Lootboxes
 from commands.fun import Fun
 from commands.admin import Admin
 from commands.owner import Owner
@@ -67,6 +68,8 @@ async def setup():
     await bot.add_cog(Greetings(bot, logger))
     await bot.add_cog(Economy(bot, logger))
     await bot.add_cog(Fun(bot, RESOURCE_PATH, logger))
+    await bot.add_cog(Lootboxes(bot, logger))
+
     # await bot.add_cog(Admin(bot, logger))
     # await bot.add_cog(Owner(bot, logger))
     await bot.add_cog(Other(bot, logger))

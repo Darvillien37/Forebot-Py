@@ -1,5 +1,7 @@
+import traceback
 import discord
 from Database import Database
+from Lootboxes.ClaimView import ClaimNowButton
 import XP
 from discord.ext import commands
 
@@ -28,9 +30,12 @@ class Events(commands.Cog):
 
     @commands.Cog.listener()
     async def on_command_error(self, ctx, error):
-        msg = f'{ctx.author} sent [{ctx.message.content}] with error [{error}]'
+        # Get traceback info
+        tb_lines = traceback.format_exception(type(error), error, error.__traceback__)
+        tb_text = ''.join(tb_lines)
+        msg = f'{ctx.author} sent [{ctx.message.content}] with error:\n [{tb_text}]'
         self.logger.error(msg)
-        print(msg)
+
         if isinstance(error, commands.errors.CommandNotFound):
             return
         if isinstance(error, commands.errors.CheckFailure):
@@ -73,7 +78,7 @@ class Events(commands.Cog):
 
         threshold = XP.get_xp_threshold(level)
         if xp >= threshold:
-            xp = 0
+            xp -= threshold
             level += 1
             tier = Database.roll_loot_tier()
             Database.add_lootbox(user_id, tier)
@@ -86,6 +91,8 @@ class Events(commands.Cog):
                 ),
                 color=color
             )
-            await channel.send(embed=embed)
+            message = await channel.send(embed=embed)
+            claimBtn = ClaimNowButton(user_id, tier, message)
+            await message.edit(view=claimBtn)
 
         Database.update_user(user_id, xp, level, coins)

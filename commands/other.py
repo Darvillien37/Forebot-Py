@@ -24,8 +24,8 @@ class Other(commands.Cog):
     #     await ctx.send("Link to the Forebot github:"
     #                    " https://github.com/Darvillien37/Forebot-Py")
 
-    @commands.hybrid_command(aliases=['info'], help='Get info about a user, or yourself')
-    async def user_info(self, ctx, member: discord.Member = None):
+    @commands.hybrid_command(aliases=['stats'], help='Get info about a user, or yourself')
+    async def info(self, ctx, member: discord.Member = None):
         member = member or ctx.author
         self.logger.info(f'{ctx.author.name} getting info for: {member.name}')
 
@@ -39,44 +39,6 @@ class Other(commands.Cog):
         myEmbed.add_field(name="💰Coins",  value=f"{coins}", inline=True)
 
         await ctx.send(embed=myEmbed)
-
-    @commands.hybrid_command(aliases=['lootbox', 'boxes'], help="View and Claim your lootboxes.")
-    async def lootboxes(self, ctx):
-        user = ctx.author
-        self.logger.info(f'{ctx.author.name} getting Lootboxes for: {user.name}')
-        boxes = Database.get_lootboxes(user.id)
-        if not boxes:
-            await ctx.send("User not found.")
-            return
-
-        embed = discord.Embed(
-            title=f"{user.display_name}'s Lootboxes",
-            color=discord.Color.blurple()
-        )
-        for (tier, count) in zip(Database.LOOT_TIERS.keys(), boxes):
-            emoji = Database.LOOT_TIERS[tier]["emoji"]
-            embed.add_field(name=f"{emoji} {tier.title()}", value=str(count), inline=True)
-
-        embed.set_thumbnail(url=user.avatar.url if user.avatar else user.default_avatar.url)
-        view = LootboxClaimView(user.id)
-        
-        await ctx.send(embed=embed, view=view)
-
-    @commands.hybrid_command(help="Open your best available lootbox!")
-    async def claim(self, ctx):
-        result = Database.claim_lootbox(ctx.author.id)
-        if result is None:
-            await ctx.send("❌ You don't have any lootboxes to claim.")
-            return
-
-        tier, reward = result
-        color = discord.Color(Database.LOOT_TIERS[tier]["color"])
-        embed = discord.Embed(
-            title=f"{tier.title()} Lootbox Opened!",
-            description=f"You received **💰 {reward} coins**!",
-            color=color
-        )
-        await ctx.send(embed=embed)
 
     # @commands.command(aliases=['tt'], help='Get the top 10 people in the guild')
     # async def topTen(self, ctx):
