@@ -1,42 +1,81 @@
 from discord.ui import View, Button
 import discord
 from Database import Database
+from Lootboxes import Lootboxes
+# from Lootboxes.Lootboxes import Lootboxes
+
+
+class ClaimNowButton(View):
+    def __init__(self, user_id, tier, original_msg, timeout=60):
+        super().__init__(timeout=timeout)
+        self.user_id = user_id
+        self.tier = tier
+        self.original_message = original_msg
+
+        self.add_item(self.make_button(self.tier))
+
+    def make_button(self, claim_type):
+        label = f"Claim {claim_type.title()} Lootbox 🎁"
+        button = Button(label=label, style=discord.ButtonStyle.success)
+
+        async def callback(interaction: discord.Interaction):
+            if interaction.user.id != self.user_id:
+                await interaction.response.send_message("❌ Not your lootbox!", ephemeral=True)
+                return
+
+            await Lootboxes.handle_tier_claim(self.tier, None, interaction)
+            self.remove_item(button)
+            await self.original_message.edit(view=self)
+
+        button.callback = callback
+        return button
 
 
 class LootboxClaimView(View):
-    def __init__(self, user_id: int, timeout=60):
-        super().__init__(timeout=timeout)
+    def __init__(self, bot, user_id: int, boxes, cog_ref, original_embed: discord.Embed,
+                 original_message: discord.Message):
+        super().__init__(timeout=60)
+        self.bot = bot
         self.user_id = user_id
+        self.box_counts = boxes
+        self.cog_ref = cog_ref
+        self.original_embed = original_embed
+        self.original_message = original_message
+        for tier in self.box_counts:
+            if self.box_counts[tier] > 0:
+                self.add_item(self.make_button(tier))
 
-        for tier in Database.LOOT_TIERS:
-            emoji = Database.LOOT_TIERS[tier]["emoji"]
-            label = tier.title()
-            button = Button(
-                label=label,
-                emoji=emoji,
-                custom_id=tier,
-                style=discord.ButtonStyle.primary
-            )
-            button.callback = self.make_callback(tier)
-            self.add_item(button)
+    def make_button(self, tier):
+        emoji = Database.LOOT_TIERS[tier]["emoji"]
+        label = f"{emoji} {tier.title()}"
+        # colour = Database.LOOT_TIERS[tier]["color"]
 
-    def make_callback(self, tier):
+        # Convert color to ButtonStyle
+        style = discord.ButtonStyle.primary
+        button = Button(label=label, style=style)
+
         async def callback(interaction: discord.Interaction):
             if interaction.user.id != self.user_id:
-                await interaction.response.send_message("You can't claim other users' lootboxes.", ephemeral=True)
+                await interaction.response.send_message("❌ Not your lootbox!", ephemeral=True)
                 return
 
-            result = Database.claim_specific_lootbox(self.user_id, tier)
-            if result is None:
-                await interaction.response.send_message(f"You have no {tier.title()} lootboxes left!", ephemeral=True)
-                return
+            await Lootboxes.handle_tier_claim(tier, None, interaction)
 
-            reward = result
-            color = Database.LOOT_TIERS[tier]["color"]
-            embed = discord.Embed(
-                title=f"{tier.title()} Lootbox Opened!",
-                description=f"You received **💰 {reward} coins**!",
-                color=color
-            )
-            await interaction.response.send_message(embed=embed)
-        return callback
+            # Update counts after claim
+            self.box_counts[tier] -= 1
+            if self.box_counts[tier] <= 0:
+                self.remove_item(button)
+
+            # Update original embed
+            index = 0
+            for field in self.original_embed.fields:
+                if tier.lower() == field.name.split()[1].strip().lower():
+                    self.original_embed.set_field_at(index,
+                                                     name=field.name,
+                                                     value=self.box_counts[tier])
+                index += 1
+
+            await self.original_message.edit(embed=self.original_embed, view=self)
+
+        button.callback = callback
+        return button

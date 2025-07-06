@@ -1,14 +1,17 @@
 import random
+from datetime import datetime, timezone
 import sqlite3
+from Lootboxes.Lootboxes import DAILY, WEEKLY, MONTHLY
+
 
 _db_file = None
 LOOT_TIERS = {
-    "common":    {"weight": 50, "min": 50,  "max": 100,   "emoji": "🟤", "color": 0x964B00},  # Brown
-    "uncommon":  {"weight": 25, "min": 100, "max": 200,   "emoji": "🟢", "color": 0x2ecc71},  # Green
-    "rare":      {"weight": 12, "min": 200, "max": 400,   "emoji": "🔵", "color": 0x3498db},  # Blue
-    "epic":      {"weight": 7,  "min": 400, "max": 800,   "emoji": "🟣", "color": 0x9b59b6},  # Purple
-    "legendary": {"weight": 4,  "min": 800, "max": 1600,  "emoji": "🟠", "color": 0xe67e22},  # Orange
-    "mythic":    {"weight": 2,  "min": 1600, "max": 3000, "emoji": "🟡", "color": 0xd4af37},  # Gold
+    "common":    {"weight": 50, "min": 5,  "max": 10,   "emoji": "🟤", "color": 0x964B00},  # Brown
+    "uncommon":  {"weight": 25, "min": 10, "max": 50,   "emoji": "🟢", "color": 0x2ecc71},  # Green
+    "rare":      {"weight": 12, "min": 50, "max": 200,   "emoji": "🔵", "color": 0x3498db},  # Blue
+    "epic":      {"weight": 7,  "min": 200, "max": 500,   "emoji": "🟣", "color": 0x9b59b6},  # Purple
+    "legendary": {"weight": 4,  "min": 500, "max": 1000,  "emoji": "🟠", "color": 0xe67e22},  # Orange
+    "mythic":    {"weight": 2,  "min": 1000, "max": 2000, "emoji": "🟡", "color": 0xd4af37},  # Gold
 }
 
 
@@ -21,40 +24,79 @@ def roll_loot_tier():
 def init_db(db_file):
     global _db_file
     _db_file = db_file
+    __ensure_table_and_columns("users", {
+                        "user_id": "INTEGER PRIMARY KEY",
+                        "xp": "INTEGER DEFAULT 0",
+                        "level": "INTEGER DEFAULT 1",
+                        "coins": "INTEGER DEFAULT 0",
+                        "loot_common": "INTEGER DEFAULT 0",
+                        "loot_uncommon": "INTEGER DEFAULT 0",
+                        "loot_rare": "INTEGER DEFAULT 0",
+                        "loot_epic": "INTEGER DEFAULT 0",
+                        "loot_legendary": "INTEGER DEFAULT 0",
+                        "loot_mythic": "INTEGER DEFAULT 0",
+                        "last_daily": "TEXT DEFAULT NULL",
+                        "last_weekly": "TEXT DEFAULT NULL",
+                        "last_monthly": "TEXT DEFAULT NULL"
+                        })
+
+
+def __ensure_table_and_columns(table_name, columns: dict):
+    """
+    Ensure the table exists, and has all the specified columns.
+    :param table_name: Name of the table to check
+    :param columns: Dict of column_name: column_definition
+                    e.g., {"coins": "INTEGER DEFAULT 0", "xp": "INTEGER DEFAULT 0"}
+    """
     with sqlite3.connect(_db_file) as conn:
-        c = conn.cursor()
-        c.execute('''CREATE TABLE IF NOT EXISTS users (
-                        user_id INTEGER,
-                        xp INTEGER DEFAULT 0,
-                        level INTEGER DEFAULT 1,
-                        coins INTEGER DEFAULT 0,
-                        loot_common INTEGER DEFAULT 0,
-                        loot_uncommon INTEGER DEFAULT 0,
-                        loot_rare INTEGER DEFAULT 0,
-                        loot_epic INTEGER DEFAULT 0,
-                        loot_legendary INTEGER DEFAULT 0,
-                        loot_mythic INTEGER DEFAULT 0,
-                        PRIMARY KEY (user_id)
-                    )''')
-        conn.commit()
+        cursor = conn.cursor()
+
+        # Check if table exists
+        cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name=?", (table_name,))
+        exists = cursor.fetchone()
+
+        if not exists:
+            # Create table from scratch
+            col_defs = ', '.join([f"{name} {definition}" for name, definition in columns.items()])
+            create_stmt = f"CREATE TABLE {table_name} ({col_defs})"
+            cursor.execute(create_stmt)
+            print(f"Created table {table_name}")
+        else:
+            # Get existing columns
+            cursor.execute(f"PRAGMA table_info({table_name})")
+            existing_cols = {row[1] for row in cursor.fetchall()}
+
+            # Add missing columns
+            for col, definition in columns.items():
+                if col not in existing_cols:
+                    cursor.execute(f"ALTER TABLE {table_name} ADD COLUMN {col} {definition}")
+                    print(f"Added missing column '{col}' to {table_name}")
 
 
 def update_db():
     global _db_file
+    check_user(202112441457442816)
     commands = [
-            "UPDATE users SET xp=101, level=1 WHERE user_id=202112441457442816",
-            # "ALTER TABLE users ADD COLUMN loot_common INTEGER DEFAULT 0;",
-            # "ALTER TABLE users ADD COLUMN loot_uncommon INTEGER DEFAULT 0;",
-            # "ALTER TABLE users ADD COLUMN loot_rare INTEGER DEFAULT 0;",
-            # "ALTER TABLE users ADD COLUMN loot_epic INTEGER DEFAULT 0;",
-            # "ALTER TABLE users ADD COLUMN loot_legendary INTEGER DEFAULT 0;",
-            # "ALTER TABLE users ADD COLUMN loot_mythic INTEGER DEFAULT 0;",
+            "UPDATE users SET xp=1000, level=1 WHERE user_id=202112441457442816",
+            # "ALTER TABLE users ADD COLUMN last_daily TEXT",
+            # "ALTER TABLE users ADD COLUMN last_weekly TEXT",
+            # "ALTER TABLE users ADD COLUMN last_monthly TEXT",
     ]
     with sqlite3.connect(_db_file) as conn:
         c = conn.cursor()
         for cmd in commands:
             c.execute(cmd)
             conn.commit()
+    # add_lootbox(202112441457442816, "common")
+    add_lootbox(202112441457442816, roll_loot_tier())
+
+
+def check_user(user_id):
+    global _db_file
+    with sqlite3.connect(_db_file) as conn:
+        c = conn.cursor()
+        c.execute("INSERT OR IGNORE INTO users (user_id) VALUES (?)", (user_id,))
+        conn.commit()
 
 
 def get_user(user_id):
@@ -102,31 +144,24 @@ def get_lootboxes(user_id):
             SELECT {", ".join(tier_columns)} FROM users WHERE user_id = ?
         ''', (user_id,))
         row = c.fetchone()
-        return row
+        return dict(zip(LOOT_TIERS.keys(), row))
 
 
-def claim_lootbox(user_id):
+def get_highest_tier_lootbox(user_id):
     with sqlite3.connect(_db_file) as conn:
         c = conn.cursor()
         tier_columns = [f"loot_{t}" for t in LOOT_TIERS]
-        c.execute(f'SELECT {", ".join(tier_columns)}, coins FROM users WHERE user_id = ?', (user_id,))
+        # Get the all loot box tiers the user has
+        c.execute(f'SELECT {", ".join(tier_columns)} FROM users WHERE user_id = ?', (user_id,))
         row = c.fetchone()
-        coin_total = row[-1]
-        tier_counts = dict(zip(LOOT_TIERS.keys(), row[:-1]))
-
+        tier_counts = dict(zip(LOOT_TIERS.keys(), row))
         # Check from highest to lowest tier
         for tier in reversed(list(LOOT_TIERS.keys())):
+            # return that tier if the user has that type
             if tier_counts[tier] > 0:
-                reward = random.randint(LOOT_TIERS[tier]["min"], LOOT_TIERS[tier]["max"])
-                coin_total += reward
-                tier_column = f"loot_{tier}"
-                c.execute(f'''
-                    UPDATE users SET {tier_column} = {tier_column} - 1, coins = ? WHERE user_id = ?
-                ''', (coin_total, user_id))
-                conn.commit()
-                return tier, reward
-
-        return None  # No lootboxes
+                return tier
+    # otherwise the user has no loot boxes, return none
+    return None
 
 
 def claim_specific_lootbox(user_id, tier):
@@ -145,3 +180,22 @@ def claim_specific_lootbox(user_id, tier):
         ''', (coin_total, user_id))
         conn.commit()
         return reward
+
+
+def get_claim_timestamps(user_id):
+    with sqlite3.connect(_db_file) as conn:
+        c = conn.cursor()
+        c.execute('SELECT last_daily, last_weekly, last_monthly FROM users WHERE user_id = ?', (user_id,))
+        row = c.fetchone()
+        if not row:
+            return None
+        return dict(zip([DAILY, WEEKLY, MONTHLY], row))
+
+
+def update_claim_timestamp(user_id, claim_type, time_str_fmt):
+    now_str = datetime.now(timezone.utc).strftime(time_str_fmt)
+    col = f'last_{claim_type}'
+    with sqlite3.connect(_db_file) as conn:
+        c = conn.cursor()
+        c.execute(f'UPDATE users SET {col} = ? WHERE user_id = ?', (now_str, user_id))
+        conn.commit()

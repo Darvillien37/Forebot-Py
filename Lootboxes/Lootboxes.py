@@ -1,0 +1,151 @@
+from Database import Database
+from Lootboxes.ClaimView import LootboxClaimView
+
+from discord.ext import commands
+import discord
+from datetime import datetime, timezone, timedelta
+
+DAILY = "daily"
+WEEKLY = "weekly"
+MONTHLY = "monthly"
+TIME_FORMAT = "%Y-%m-%d %H:%M:%S"
+
+
+class Lootboxes(commands.Cog):
+
+    def __init__(self, bot, logger):
+        self.bot = bot
+        self.logger = logger
+        self.BOX_DELTAS = {
+            DAILY: timedelta(days=1),
+            WEEKLY: timedelta(weeks=1),
+            MONTHLY: timedelta(days=30),
+        }
+
+    @commands.hybrid_command(aliases=['lootbox', 'boxes'], help="View and Claim your lootboxes.")
+    async def lootboxes(self, ctx):
+        user = ctx.author
+        self.logger.info(f'{ctx.author.name} getting Lootboxes for: {user.name}')
+        box_counts = Database.get_lootboxes(user.id)
+        if not box_counts:
+            await ctx.send("User not found.")
+            return
+
+        embed = discord.Embed(
+            title=f"{user.display_name}'s Lootboxes",
+            color=discord.Color.blurple()
+        )
+
+        for tier in box_counts:
+            emoji = Database.LOOT_TIERS[tier]["emoji"]
+            embed.add_field(name=f"{emoji} {tier.title()}", value=str(box_counts[tier]), inline=True)
+        embed.set_thumbnail(url=user.avatar.url if user.avatar else user.default_avatar.url)
+        message = await ctx.send(embed=embed)
+
+        view = LootboxClaimView(
+            bot=self.bot,
+            user_id=user.id,
+            boxes=box_counts,
+            cog_ref=self,
+            original_embed=embed,
+            original_message=message
+        )
+        await message.edit(view=view)
+
+    @commands.hybrid_command(help="Open your best available lootbox!")
+    async def claim(self, ctx: commands.Context):
+        result = Database.get_highest_tier_lootbox(ctx.author.id)
+        if result is None:
+            await ctx.send("❌ You don't have any lootboxes to claim.", ephemeral=True)
+            return
+
+        tier = result
+        await handle_tier_claim(tier, ctx)
+
+    @commands.hybrid_command(name=DAILY, description="Claim your daily lootbox.")
+    async def daily(self, ctx: commands.Context):
+        await self.handle_periodic_claim(ctx, DAILY)
+
+    @commands.hybrid_command(name=WEEKLY, description="Claim your weekly lootbox.")
+    async def weekly(self, ctx: commands.Context):
+        await self.handle_periodic_claim(ctx, WEEKLY)
+
+    @commands.hybrid_command(name=MONTHLY, description="Claim your monthly lootbox.")
+    async def monthly(self, ctx: commands.Context):
+        await self.handle_periodic_claim(ctx, MONTHLY)
+
+    async def handle_periodic_claim(self, ctx, period_type):
+        user_id = ctx.author.id
+        remaining = self.time_until_claim(user_id, period_type)
+        if remaining.total_seconds() > 0:
+            time_str = format_timedelta(remaining)
+            await ctx.send(f"⏳ You can claim your next {period_type} lootbox in **{time_str}**.")
+            return
+
+        tier = Database.roll_loot_tier()
+        Database.add_lootbox(user_id, tier)
+        Database.update_claim_timestamp(user_id, period_type, TIME_FORMAT)
+
+        embed = discord.Embed(
+            title=f"🎁 {period_type.title()} Lootbox Claimed!",
+            description=f"You received a **{tier.title()}** lootbox!",
+            color=Database.LOOT_TIERS[tier]["color"]
+        )
+        await ctx.send(embed=embed)
+
+    def time_until_claim(self, user_id, period_type):
+        timestamps = Database.get_claim_timestamps(user_id)
+        if not timestamps or not timestamps[period_type]:
+            return timedelta(0)
+
+        last_dt = datetime.strptime(timestamps[period_type], TIME_FORMAT).replace(tzinfo=timezone.utc)
+        now = datetime.now(timezone.utc)
+
+        delta = self.BOX_DELTAS[period_type]
+
+        next_time = last_dt + delta
+        remaining = next_time - now
+        return max(timedelta(0), remaining)
+
+
+# Doesn't need to be in class, as doesn't interact with class
+async def handle_tier_claim(tier_type: str, ctx: commands.Context = None,
+                            interaction: discord.Interaction = None):
+    if ctx is None:
+        user = interaction.user
+    else:
+        user = ctx.author
+
+    result = Database.claim_specific_lootbox(user.id, tier_type)
+    if result is None:
+        if ctx is None:
+            await interaction.response.send_message(f"You have no {tier_type.title()} lootboxes left!",
+                                                    ephemeral=True)
+        else:
+            ctx.send(f"You have no {tier_type.title()} lootboxes left!", ephemeral=True)
+        return
+
+    reward = result
+    color = Database.LOOT_TIERS[tier_type]["color"]
+    embed = discord.Embed(
+        title=f"{tier_type.title()} Lootbox Opened!",
+        description=f"{user.name} received **💰 {reward} coins**!",
+        color=color
+    )
+    if ctx is None:
+        await interaction.response.send_message(embed=embed)
+    else:
+        await ctx.send(embed=embed)
+
+
+def format_timedelta(td: timedelta):
+    total_seconds = int(td.total_seconds())
+    hours, remainder = divmod(total_seconds, 3600)
+    minutes, seconds = divmod(remainder, 60)
+    if hours >= 24:
+        days, hours = divmod(hours, 24)
+        return f"{days}d {hours}h"
+    elif hours:
+        return f"{hours}h {minutes}m"
+    else:
+        return f"{minutes}m {seconds}s"
