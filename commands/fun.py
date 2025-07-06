@@ -47,8 +47,8 @@ class Fun(commands.Cog):
     @commands.hybrid_command(help='Gime a Chaz!')
     async def chaz(self, ctx):
         self.logger.info(f'{ctx.author.name} triggered \'Chaz\' event')
-        files = os.listdir(self.res + '/chaz/')
+        files = os.listdir(self.res + '/Chaz/')
         d = random.choice(files)
         await ctx.send(
             file=discord.File(
-                os.path.abspath(self.res + '/chaz/' + d)))
+                os.path.abspath(self.res + '/Chaz/' + d)))

@@ -46,7 +46,7 @@ logger.setLevel(logging.DEBUG)
 now_str = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 # now_str = "now"
 
-handler = logging.FileHandler(filename=f"forebot_{now_str}.log", encoding='utf-8', mode='w')
+handler = logging.FileHandler(filename=f"./logs/forebot_{now_str}.log", encoding='utf-8', mode='w')
 handler.setFormatter(logging.Formatter('%(asctime)s:%(levelname)s:%(name)s: %(message)s'))
 logger.addHandler(handler)
 
