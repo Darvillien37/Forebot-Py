@@ -19,6 +19,11 @@ class LootboxClaimView(View):
             if self.box_counts[tier] > 0:
                 self.add_item(self.make_button(tier))
 
+    async def on_timeout(self):
+        self.clear_items()
+        if self.original_message is not None:
+            await self.original_message.edit(view=self)
+
     def make_button(self, tier):
         emoji = Database.LOOT_TIERS[tier]["emoji"]
         label = f"{emoji} {tier.title()}"

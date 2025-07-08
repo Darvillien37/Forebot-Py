@@ -12,7 +12,7 @@ from Events import Events
 from commands.greetings import Greetings
 from Lootboxes.Lootboxes import Lootboxes
 from commands.fun import Fun
-# from commands.admin import Admin
+from commands.admin import Admin
 # from commands.owner import Owner
 from commands.other import Other
 from commands.EasterEggs import EasterEggs
@@ -86,7 +86,7 @@ async def setup():
     await bot.add_cog(Lootboxes(bot, logger))
     await bot.add_cog(VoiceXPLoop(bot, logger))
 
-    # await bot.add_cog(Admin(bot, logger))
+    await bot.add_cog(Admin(bot, logger))
     # await bot.add_cog(Owner(bot, logger))
     await bot.add_cog(Other(bot, logger))
     await bot.add_cog(EasterEggs(bot, logger))

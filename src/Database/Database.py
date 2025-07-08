@@ -41,6 +41,11 @@ def init_db(db_file):
                         "last_voice_xp": "TEXT DEFAULT NULL"
                         })
 
+    __ensure_table_and_columns("guilds", {
+                        "guild_id": "INTEGER PRIMARY KEY",
+                        "bot_spam_ch_id": "INTEGER DEFAULT NULL",
+                        })
+
 
 def __ensure_table_and_columns(table_name, columns: dict):
     """
@@ -148,6 +153,19 @@ def update_user(user_id, xp, level, coins):
         c.execute('''UPDATE users SET xp=?, level=?, coins=?
                      WHERE user_id=?''', (xp, level, coins, user_id))
         conn.commit()
+
+
+def get_all_user_ids(file=None):
+    if file is None:
+        path = _db_file
+    else:
+        path = file
+
+    with sqlite3.connect(path) as conn:
+        c = conn.cursor()
+        c.execute('SELECT user_id FROM users')
+        user_ids = c.fetchall()
+        return user_ids
 
 
 # ------------------ VOICE STUFF ------------------
@@ -258,4 +276,35 @@ def update_claim_timestamp(user_id, claim_type):
     with sqlite3.connect(_db_file) as conn:
         c = conn.cursor()
         c.execute(f'UPDATE users SET {col} = ? WHERE user_id = ?', (now_str, user_id))
+        conn.commit()
+
+
+# ------------------ Guild STUFF ------------------
+
+def check_guild(guild_id: int):
+    global _db_file
+    with sqlite3.connect(_db_file) as conn:
+        c = conn.cursor()
+        c.execute("INSERT OR IGNORE INTO guilds (guild_id) VALUES (?)", (guild_id,))
+        conn.commit()
+
+
+def get_guild_spam_channel_id(guild_id: int):
+    check_guild(guild_id)
+    global _db_file
+    with sqlite3.connect(_db_file) as conn:
+        c = conn.cursor()
+        c.execute('SELECT bot_spam_ch_id FROM guilds WHERE guild_id=?', (guild_id,))
+        ch_id = c.fetchone()
+        if not ch_id:
+            return None
+        return ch_id
+
+
+def set_guild_spam_channel_id(guild_id: int, channel_id: int):
+    check_guild(guild_id)
+    global _db_file
+    with sqlite3.connect(_db_file) as conn:
+        c = conn.cursor()
+        c.execute('UPDATE guilds SET bot_spam_ch_id = ? WHERE guild_id = ?', (channel_id, guild_id))
         conn.commit()

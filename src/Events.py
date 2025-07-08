@@ -25,6 +25,14 @@ class Events(commands.Cog):
         print('Connected to guilds:')
         for guild in self.bot.guilds:
             print(f'\t-{guild.name}(id: {guild.id})')
+        print("\nUsers in Database:")
+        user_ids = Database.get_all_user_ids()
+        for user_id in user_ids:
+            user = self.bot.get_user(user_id[0])
+            if user is not None:
+                print(f"{user.display_name} : {user.id}")
+            else:
+                print(f"Unknown User: {user_id[0]}")
 
     @commands.Cog.listener()
     async def on_command_error(self, ctx, error):
@@ -55,6 +63,15 @@ class Events(commands.Cog):
         await XP.give_from_msg(message.content,
                                message.author,
                                message.channel)
+
+    @commands.Cog.listener()
+    async def on_command_completion(self, ctx: commands.Context):
+        # if the message is from a bot, ignore it.
+        if ctx.author.bot:
+            return
+        args = " ".join(f"{k}={v}" for k, v in ctx.kwargs.items())
+        self.logger.info(f'{ctx.author.display_name} called command [{ctx.command.qualified_name} {args}]')
+        await XP.give_from_values(1, 10, ctx.author, ctx.channel)
 
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload):

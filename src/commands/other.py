@@ -26,7 +26,6 @@ class Other(commands.Cog):
     @commands.hybrid_command(aliases=['stats'], help='Get info about a user, or yourself')
     async def info(self, ctx, member: discord.Member = None):
         member = member or ctx.author
-        self.logger.info(f'{ctx.author.name} getting info for: {member.name}')
 
         user = Database.get_user(member.id)
         user_id, xp, level, coins = user

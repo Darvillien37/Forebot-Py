@@ -20,7 +20,6 @@ class Lootboxes(commands.Cog):
     @commands.hybrid_command(aliases=['lootbox', 'boxes'], help="View and Claim your lootboxes.")
     async def lootboxes(self, ctx):
         user = ctx.author
-        self.logger.info(f'{ctx.author.name} getting Lootboxes for: {user.name}')
         box_counts = Database.get_lootboxes(user.id)
         if not box_counts:
             await ctx.send("User not found.")
@@ -56,6 +55,42 @@ class Lootboxes(commands.Cog):
 
         tier = result
         await handle_tier_claim(tier, ctx)
+
+    @commands.hybrid_command(help="Open all your lootboxes!")
+    async def claim_all(self, ctx: commands.Context):
+        user_id = ctx.author.id
+        boxes = Database.get_lootboxes(user_id)
+
+        if not any(count > 0 for count in boxes.values()):
+            await ctx.send("❌ You have no lootboxes to claim.", ephemeral=True)
+            return
+
+        total_coins = 0
+        claimed_boxes = []
+        for tier, count in boxes.items():
+            tier_total = 0
+            for _ in range(count):
+                reward = Database.claim_specific_lootbox(user_id, tier)
+                if reward is not None:
+                    total_coins += reward
+                    tier_total += reward
+            if count > 0:
+                claimed_boxes.append((tier, count, tier_total))
+
+        # Build and send summary embed
+        embed = discord.Embed(
+            title="🎁 All Lootboxes Claimed!",
+            description=f"You gained **{total_coins} Forecoins**!",
+            color=discord.Color.blurple(),
+            timestamp=datetime.now(timezone.utc)
+        )
+
+        for tier, count, tier_total in claimed_boxes:
+            emoji = Database.LOOT_TIERS[tier]["emoji"]
+            embed.add_field(name=f"{emoji} {count}x {tier.title()}", value=f"💰 {tier_total} Forecoins", inline=True)
+
+        embed.set_thumbnail(url=ctx.author.avatar.url if ctx.author.avatar else ctx.author.default_avatar.url)
+        await ctx.send(embed=embed)
 
     @commands.hybrid_command(name=DAILY, description="Claim your daily lootbox.")
     async def daily(self, ctx: commands.Context):
@@ -124,7 +159,7 @@ async def handle_tier_claim(tier_type: str, ctx: commands.Context = None,
     color = Database.LOOT_TIERS[tier_type]["color"]
     embed = discord.Embed(
         title=f"{tier_type.title()} Lootbox Opened!",
-        description=f"{user.name} received **💰 {reward} coins**!",
+        description=f"{user.display_name} received **💰 {reward} ForeCoins**!",
         color=color
     )
     if ctx is None:

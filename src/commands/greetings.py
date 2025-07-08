@@ -10,6 +10,5 @@ class Greetings(commands.Cog):
     @commands.hybrid_command()
     async def hello(self, ctx, *, member: discord.Member = None):
         """Says hello"""
-        self.logger.info(f'{member.name} Triggered \'hello\'')
         member = member or ctx.author
         await ctx.send(f'Hello {member.mention}!')
