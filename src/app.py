@@ -1,4 +1,5 @@
 import asyncio
+from datetime import datetime
 from discord.ext import commands
 import os
 import logging
@@ -53,8 +54,8 @@ if not os.path.exists(RESOURCE_PATH):
 # ------------------ LOGGER ------------------
 logger = logging.getLogger('discord')
 logger.setLevel(logging.DEBUG)
-# now_str = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-now_str = "now"
+now_str = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+# now_str = "now"
 
 
 handler = logging.FileHandler(filename=f"{LOG_PATH}/forebot_{now_str}.log", encoding='utf-8', mode='w')
