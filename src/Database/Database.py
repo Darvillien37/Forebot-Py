@@ -1,7 +1,7 @@
 import random
 from datetime import datetime, timezone
 import sqlite3
-from Lootboxes.Lootboxes import DAILY, WEEKLY, MONTHLY
+from Utils.utils import DAILY, WEEKLY, MONTHLY, TIME_FORMAT
 
 
 _db_file = None
@@ -37,7 +37,8 @@ def init_db(db_file):
                         "loot_mythic": "INTEGER DEFAULT 0",
                         "last_daily": "TEXT DEFAULT NULL",
                         "last_weekly": "TEXT DEFAULT NULL",
-                        "last_monthly": "TEXT DEFAULT NULL"
+                        "last_monthly": "TEXT DEFAULT NULL",
+                        "last_voice_xp": "TEXT DEFAULT NULL"
                         })
 
 
@@ -73,23 +74,29 @@ def __ensure_table_and_columns(table_name, columns: dict):
                     print(f"Added missing column '{col}' to {table_name}")
 
 
-def update_db():
+def dt_testing():
     global _db_file
     check_user(202112441457442816)
     commands = [
-            "UPDATE users SET xp=1000, level=1 WHERE user_id=202112441457442816",
-            # "ALTER TABLE users ADD COLUMN last_daily TEXT",
-            # "ALTER TABLE users ADD COLUMN last_weekly TEXT",
-            # "ALTER TABLE users ADD COLUMN last_monthly TEXT",
+            # "UPDATE users SET xp=1000, level=1 WHERE user_id=202112441457442816",
     ]
     with sqlite3.connect(_db_file) as conn:
         c = conn.cursor()
         for cmd in commands:
             c.execute(cmd)
             conn.commit()
-    # add_lootbox(202112441457442816, "common")
-    add_lootbox(202112441457442816, roll_loot_tier())
+    # add_lootbox(202112441457442816, roll_loot_tier())
+    print(f"voice: {get_last_voice_xp(202112441457442816)}")   
 
+
+def add_coins(user_id, delta):
+    with sqlite3.connect(_db_file) as conn:
+        c = conn.cursor()
+        c.execute('UPDATE users SET coins = coins + ? WHERE user_id = ?', (delta, user_id))
+        conn.commit()
+
+
+# ------------------ USER STUFF ------------------
 
 def check_user(user_id):
     global _db_file
@@ -112,10 +119,25 @@ def get_user(user_id):
         return user
 
 
-def add_coins(user_id, delta):
+def get_user_xp_level(user_id):
+    global _db_file
+    check_user(user_id)
     with sqlite3.connect(_db_file) as conn:
         c = conn.cursor()
-        c.execute('UPDATE users SET coins = coins + ? WHERE user_id = ?', (delta, user_id))
+        c.execute('SELECT xp, level FROM users WHERE user_id=?', (user_id,))
+        data = c.fetchone()
+        if not data:
+            return (0, 1)
+        return (data[0], data[1])
+
+
+def set_user_xp_level(user_id, xp, level):
+    global _db_file
+    check_user(user_id)
+    with sqlite3.connect(_db_file) as conn:
+        c = conn.cursor()
+        c.execute('''UPDATE users SET xp=?, level=?
+                     WHERE user_id=?''', (xp, level, user_id))
         conn.commit()
 
 
@@ -128,7 +150,40 @@ def update_user(user_id, xp, level, coins):
         conn.commit()
 
 
+# ------------------ VOICE STUFF ------------------
+
+def get_last_voice_xp(user_id):
+    check_user(user_id)
+    with sqlite3.connect(_db_file) as conn:
+        c = conn.cursor()
+        c.execute(f"SELECT last_voice_xp FROM users WHERE user_id = {user_id}")
+        row = c.fetchone()
+        if not row or row[0] is None:
+            return None
+        return datetime.strptime(row[0], TIME_FORMAT).replace(tzinfo=timezone.utc)
+
+
+def update_last_voice_xp(user_id):
+    check_user(user_id)
+    with sqlite3.connect(_db_file) as conn:
+        c = conn.cursor()
+        now = datetime.now(timezone.utc).strftime(TIME_FORMAT)
+        c.execute("UPDATE users SET last_voice_xp = ? WHERE user_id = ?", (now, user_id))
+        conn.commit()
+
+
+def clear_last_voice_xp(user_id):
+    check_user(user_id)
+    with sqlite3.connect(_db_file) as conn:
+        c = conn.cursor()
+        c.execute("UPDATE users SET last_voice_xp = NULL WHERE user_id = ?", (user_id,))
+        conn.commit()
+
+
+# ------------------ LOOTBOX STUFF ------------------
+
 def add_lootbox(user_id, tier):
+    check_user(user_id)
     col = f"loot_{tier}"
     with sqlite3.connect(_db_file) as conn:
         c = conn.cursor()
@@ -137,6 +192,7 @@ def add_lootbox(user_id, tier):
 
 
 def get_lootboxes(user_id):
+    check_user(user_id)
     with sqlite3.connect(_db_file) as conn:
         c = conn.cursor()
         tier_columns = [f"loot_{tier}" for tier in LOOT_TIERS]
@@ -148,6 +204,7 @@ def get_lootboxes(user_id):
 
 
 def get_highest_tier_lootbox(user_id):
+    check_user(user_id)
     with sqlite3.connect(_db_file) as conn:
         c = conn.cursor()
         tier_columns = [f"loot_{t}" for t in LOOT_TIERS]
@@ -165,6 +222,7 @@ def get_highest_tier_lootbox(user_id):
 
 
 def claim_specific_lootbox(user_id, tier):
+    check_user(user_id)
     tier_column = f"loot_{tier}"
     with sqlite3.connect(_db_file) as conn:
         c = conn.cursor()
@@ -183,6 +241,7 @@ def claim_specific_lootbox(user_id, tier):
 
 
 def get_claim_timestamps(user_id):
+    check_user(user_id)
     with sqlite3.connect(_db_file) as conn:
         c = conn.cursor()
         c.execute('SELECT last_daily, last_weekly, last_monthly FROM users WHERE user_id = ?', (user_id,))
@@ -192,8 +251,9 @@ def get_claim_timestamps(user_id):
         return dict(zip([DAILY, WEEKLY, MONTHLY], row))
 
 
-def update_claim_timestamp(user_id, claim_type, time_str_fmt):
-    now_str = datetime.now(timezone.utc).strftime(time_str_fmt)
+def update_claim_timestamp(user_id, claim_type):
+    check_user(user_id)
+    now_str = datetime.now(timezone.utc).strftime(TIME_FORMAT)
     col = f'last_{claim_type}'
     with sqlite3.connect(_db_file) as conn:
         c = conn.cursor()

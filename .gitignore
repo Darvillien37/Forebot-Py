@@ -11,3 +11,4 @@ log.log
 Storage/Data/*
 config.json
 *.log
+testing_data.db

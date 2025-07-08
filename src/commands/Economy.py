@@ -7,7 +7,7 @@ class Economy(commands.Cog):
     def __init__(self, bot, logger):
         self.bot = bot
         self.logger = logger
-    
+
     @commands.hybrid_command(name="give", help="Give coins to another user.")
     @commands.cooldown(1, 10, commands.BucketType.user)
     async def give(self, ctx: commands.Context, member: discord.Member, amount: int):

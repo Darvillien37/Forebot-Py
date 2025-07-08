@@ -1,9 +1,7 @@
 import traceback
-import discord
-from Database import Database
-from Lootboxes.ClaimView import ClaimNowButton
-import XP
 from discord.ext import commands
+import XP
+from Database import Database
 
 
 class Events(commands.Cog):
@@ -54,9 +52,9 @@ class Events(commands.Cog):
         if message.author.bot:
             return
 
-        await self.__do_xp_give(message.content,
-                                message.author,
-                                message.channel)
+        await XP.give_from_msg(message.content,
+                               message.author,
+                               message.channel)
 
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload):
@@ -68,31 +66,16 @@ class Events(commands.Cog):
                                 payload.member,
                                 self.bot.get_channel(payload.channel_id))
 
-    async def __do_xp_give(self, msg_content, author, channel):
-        # Get the amount of xp gained for the message
-        xp_gained = XP.get_xp_from_message(msg_content)
-        user = Database.get_user(author.id)
-        # print(user)
-        user_id, xp, level, coins = user
-        xp += xp_gained
-
-        threshold = XP.get_xp_threshold(level)
-        if xp >= threshold:
-            xp -= threshold
-            level += 1
-            tier = Database.roll_loot_tier()
-            Database.add_lootbox(user_id, tier)
-            color = discord.Color(Database.LOOT_TIERS[tier]["color"])
-            embed = discord.Embed(
-                title="🆙 Level Up!",
-                description=(
-                    f"{author.mention} reached **Level {level}**!\n"
-                    f"🎁 You've earned a **{tier.title().upper()} Lootbox**!"
-                ),
-                color=color
-            )
-            message = await channel.send(embed=embed)
-            claimBtn = ClaimNowButton(user_id, tier, message)
-            await message.edit(view=claimBtn)
-
-        Database.update_user(user_id, xp, level, coins)
+    @commands.Cog.listener()
+    async def on_voice_state_update(self, member, before, after):
+        # Joined voice
+        if not before.channel and after.channel:
+            print(f"{member.name} Joined {after.channel.name}")
+            Database.update_last_voice_xp(member.id)
+        # Left voice
+        elif before.channel and not after.channel:
+            print(f"{member.name} Left {before.channel.name}")
+            Database.clear_last_voice_xp(member.id)
+        # Switched voice channel
+        elif before.channel != after.channel:
+            print(f"{member.name} Moved from {before.channel.name} to {after.channel.name}")

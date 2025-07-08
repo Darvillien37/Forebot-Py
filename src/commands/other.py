@@ -1,5 +1,4 @@
 from Database import Database
-from Lootboxes.ClaimView import LootboxClaimView
 import XP
 from discord.ext import commands
 import discord
@@ -32,11 +31,11 @@ class Other(commands.Cog):
         user = Database.get_user(member.id)
         user_id, xp, level, coins = user
         threshold = XP.get_xp_threshold(level)
-        myEmbed = discord.Embed(title=f"{member.name}'s info:", color=discord.Color.gold())
+        myEmbed = discord.Embed(title=f"{member.display_name}'s info:", color=discord.Color.gold())
         myEmbed.set_thumbnail(url=member.avatar.url)
         myEmbed.add_field(name="XP",        value=f"{xp}/{threshold}", inline=True)
         myEmbed.add_field(name="Level",     value=f"{level}", inline=True)
-        myEmbed.add_field(name="💰Coins",  value=f"{coins}", inline=True)
+        myEmbed.add_field(name="ForeCoins",  value=f"{coins}", inline=True)
 
         await ctx.send(embed=myEmbed)
 
@@ -67,4 +66,3 @@ class Other(commands.Cog):
     #                           inline=True)
 
     #     await ctx.send(embed=myEmbed)
-

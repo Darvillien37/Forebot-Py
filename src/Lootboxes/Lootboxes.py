@@ -1,14 +1,9 @@
 from Database import Database
 from Lootboxes.ClaimView import LootboxClaimView
-
 from discord.ext import commands
 import discord
 from datetime import datetime, timezone, timedelta
-
-DAILY = "daily"
-WEEKLY = "weekly"
-MONTHLY = "monthly"
-TIME_FORMAT = "%Y-%m-%d %H:%M:%S"
+from Utils.utils import DAILY, WEEKLY, MONTHLY, TIME_FORMAT
 
 
 class Lootboxes(commands.Cog):
@@ -84,7 +79,7 @@ class Lootboxes(commands.Cog):
 
         tier = Database.roll_loot_tier()
         Database.add_lootbox(user_id, tier)
-        Database.update_claim_timestamp(user_id, period_type, TIME_FORMAT)
+        Database.update_claim_timestamp(user_id, period_type)
 
         embed = discord.Embed(
             title=f"🎁 {period_type.title()} Lootbox Claimed!",
