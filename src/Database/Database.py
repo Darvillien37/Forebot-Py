@@ -91,7 +91,7 @@ def dt_testing():
             c.execute(cmd)
             conn.commit()
     # add_lootbox(202112441457442816, roll_loot_tier())
-    print(f"voice: {get_last_voice_xp(202112441457442816)}")   
+    print(f"voice: {get_last_voice_xp(202112441457442816)}")
 
 
 def add_coins(user_id, delta):
