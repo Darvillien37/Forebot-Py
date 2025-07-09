@@ -9,8 +9,8 @@ TIME_FORMAT = "%Y-%m-%d %H:%M:%S"
 
 
 def find_default_channel(user, guild: discord.Guild):
-    channel = Database.get_guild_spam_channel_id(guild.id)
-    if channel is not None:
+    channel_id = Database.get_guild_spam_channel_id(guild.id)
+    if channel_id is not None:
         channel = guild.get_channel(channel_id)
         if channel is not None:
             return channel
