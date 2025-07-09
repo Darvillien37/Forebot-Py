@@ -298,7 +298,7 @@ def get_guild_spam_channel_id(guild_id: int):
         ch_id = c.fetchone()
         if not ch_id:
             return None
-        return ch_id
+        return ch_id[0]
 
 
 def set_guild_spam_channel_id(guild_id: int, channel_id: int):
