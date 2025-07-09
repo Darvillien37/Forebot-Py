@@ -1,7 +1,7 @@
 from discord.ui import View, Button
 import discord
 from Database import Database
-from Lootboxes import Lootboxes
+from Lootboxes import HandleTierClaim
 # from Lootboxes.Lootboxes import Lootboxes
 
 
@@ -38,7 +38,7 @@ class LootboxClaimView(View):
                 await interaction.response.send_message("❌ Not your lootbox!", ephemeral=True)
                 return
 
-            await Lootboxes.handle_tier_claim(tier, None, interaction)
+            await HandleTierClaim.handle_tier_claim(tier, None, interaction)
 
             # Update counts after claim
             self.box_counts[tier] -= 1

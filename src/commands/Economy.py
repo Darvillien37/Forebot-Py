@@ -32,7 +32,7 @@ class Economy(commands.Cog):
             return
 
         # Update both users
-        Database.add_coins(ctx.author.id, -amount)
-        Database.add_coins(member.id, amount)
+        Database.update_coins(ctx.author.id, -amount)
+        Database.update_coins(member.id, amount)
 
         await ctx.send(f"✅ {ctx.author.mention} gave **{amount} coins** to {member.mention}!")

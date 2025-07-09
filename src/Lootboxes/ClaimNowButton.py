@@ -1,6 +1,6 @@
 import discord
 from discord.ui import View, Button
-from Lootboxes import Lootboxes
+from Lootboxes import HandleTierClaim
 
 
 class ClaimNowButton(View):
@@ -26,7 +26,7 @@ class ClaimNowButton(View):
                 await interaction.response.send_message("❌ Not your lootbox!", ephemeral=True)
                 return
 
-            await Lootboxes.handle_tier_claim(self.tier, None, interaction)
+            await HandleTierClaim.handle_tier_claim(self.tier, None, interaction)
             self.remove_item(button)
             await self.original_message.edit(view=self)
 

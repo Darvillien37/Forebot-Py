@@ -94,7 +94,21 @@ def dt_testing():
     print(f"voice: {get_last_voice_xp(202112441457442816)}")
 
 
-def add_coins(user_id, delta):
+def get_coins(user_id):
+    check_user(user_id)
+    global _db_file
+    with sqlite3.connect(_db_file) as conn:
+        c = conn.cursor()
+        c.execute('SELECT coins FROM users WHERE user_id=?', (user_id,))
+        coins = c.fetchone()
+        if not coins:
+            return 0
+        return coins[0]
+
+
+def update_coins(user_id: int, delta: int):
+    check_user(user_id)
+    global _db_file
     with sqlite3.connect(_db_file) as conn:
         c = conn.cursor()
         c.execute('UPDATE users SET coins = coins + ? WHERE user_id = ?', (delta, user_id))

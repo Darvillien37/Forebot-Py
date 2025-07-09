@@ -3,6 +3,8 @@ import os
 from discord.ext import commands
 import random
 
+from Database import Database
+
 
 class Fun(commands.Cog):
     def __init__(self, bot, res, logger):
@@ -36,17 +38,20 @@ class Fun(commands.Cog):
         await ctx.send(','.join(dice))
 
     @commands.hybrid_command(help='Gime a Foreman!')
-    async def foreman(self, ctx):
-        self.logger.info(f'{ctx.author.name} triggered \'foreman\' event')
-        files = os.listdir(self.res + '/Foremans/')
-        d = random.choice(files)
-        await ctx.send(
-            file=discord.File(
-                os.path.abspath(self.res + '/Foremans/' + d)))
+    async def foreman(self, ctx: commands.Context):
+        coins = Database.get_coins(ctx.author.id)
+        if coins > 0:
+            Database.update_coins(ctx.author.id, -1)
+            files = os.listdir(self.res + '/Foremans/')
+            d = random.choice(files)
+            await ctx.send(
+                file=discord.File(
+                    os.path.abspath(self.res + '/Foremans/' + d)))
+        else:
+            await ctx.send("Ya Got No Coins! 😔")
 
     @commands.hybrid_command(help='Gime a Chaz!')
     async def chaz(self, ctx):
-        self.logger.info(f'{ctx.author.name} triggered \'Chaz\' event')
         files = os.listdir(self.res + '/Chaz/')
         d = random.choice(files)
         await ctx.send(

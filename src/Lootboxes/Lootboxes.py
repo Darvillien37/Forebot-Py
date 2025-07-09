@@ -1,4 +1,6 @@
 from Database import Database
+from Lootboxes import HandleTierClaim
+from Lootboxes.ClaimNowButton import ClaimNowButton
 from Lootboxes.ClaimView import LootboxClaimView
 from discord.ext import commands
 import discord
@@ -54,7 +56,7 @@ class Lootboxes(commands.Cog):
             return
 
         tier = result
-        await handle_tier_claim(tier, ctx)
+        await HandleTierClaim.handle_tier_claim(tier, ctx)
 
     @commands.hybrid_command(help="Open all your lootboxes!")
     async def claim_all(self, ctx: commands.Context):
@@ -121,7 +123,9 @@ class Lootboxes(commands.Cog):
             description=f"You received a **{tier.title()}** lootbox!",
             color=Database.LOOT_TIERS[tier]["color"]
         )
-        await ctx.send(embed=embed)
+        message = await ctx.send(embed=embed)
+        claimBtn = ClaimNowButton(user_id, tier, message)
+        await message.edit(view=claimBtn)
 
     def time_until_claim(self, user_id, period_type):
         timestamps = Database.get_claim_timestamps(user_id)
@@ -136,36 +140,6 @@ class Lootboxes(commands.Cog):
         next_time = last_dt + delta
         remaining = next_time - now
         return max(timedelta(0), remaining)
-
-
-# Doesn't need to be in class, as doesn't interact with class
-async def handle_tier_claim(tier_type: str, ctx: commands.Context = None,
-                            interaction: discord.Interaction = None):
-    if ctx is None:
-        user = interaction.user
-    else:
-        user = ctx.author
-
-    result = Database.claim_specific_lootbox(user.id, tier_type)
-    if result is None:
-        if ctx is None:
-            await interaction.response.send_message(f"You have no {tier_type.title()} lootboxes left!",
-                                                    ephemeral=True)
-        else:
-            ctx.send(f"You have no {tier_type.title()} lootboxes left!", ephemeral=True)
-        return
-
-    reward = result
-    color = Database.LOOT_TIERS[tier_type]["color"]
-    embed = discord.Embed(
-        title=f"{tier_type.title()} Lootbox Opened!",
-        description=f"{user.display_name} received **💰 {reward} ForeCoins**!",
-        color=color
-    )
-    if ctx is None:
-        await interaction.response.send_message(embed=embed)
-    else:
-        await ctx.send(embed=embed)
 
 
 def format_timedelta(td: timedelta):
