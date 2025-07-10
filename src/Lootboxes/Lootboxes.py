@@ -1,6 +1,4 @@
 from Database import Database
-from Lootboxes import HandleTierClaim
-from Lootboxes.ClaimNowButton import ClaimNowButton
 from Lootboxes.ClaimView import LootboxClaimView
 from discord.ext import commands
 import discord
@@ -17,6 +15,11 @@ class Lootboxes(commands.Cog):
             DAILY: timedelta(days=1),
             WEEKLY: timedelta(weeks=1),
             MONTHLY: timedelta(days=30),
+        }
+        self.DELTA_EMOJIS = {
+            DAILY: ":sunny:",
+            WEEKLY: ":seven:",
+            MONTHLY: ":calendar_spiral:"
         }
 
     @commands.hybrid_command(aliases=['lootbox', 'boxes'], help="View and Claim your lootboxes.")
@@ -48,18 +51,8 @@ class Lootboxes(commands.Cog):
         )
         await message.edit(view=view)
 
-    @commands.hybrid_command(help="Open your best available lootbox!")
-    async def claim(self, ctx: commands.Context):
-        result = Database.get_highest_tier_lootbox(ctx.author.id)
-        if result is None:
-            await ctx.send("❌ You don't have any lootboxes to claim.", ephemeral=True)
-            return
-
-        tier = result
-        await HandleTierClaim.handle_tier_claim(tier, ctx)
-
     @commands.hybrid_command(help="Open all your lootboxes!")
-    async def claim_all(self, ctx: commands.Context):
+    async def open_all(self, ctx: commands.Context):
         user_id = ctx.author.id
         boxes = Database.get_lootboxes(user_id)
 
@@ -94,38 +87,38 @@ class Lootboxes(commands.Cog):
         embed.set_thumbnail(url=ctx.author.avatar.url if ctx.author.avatar else ctx.author.default_avatar.url)
         await ctx.send(embed=embed)
 
-    @commands.hybrid_command(name=DAILY, description="Claim your daily lootbox.")
-    async def daily(self, ctx: commands.Context):
-        await self.handle_periodic_claim(ctx, DAILY)
-
-    @commands.hybrid_command(name=WEEKLY, description="Claim your weekly lootbox.")
-    async def weekly(self, ctx: commands.Context):
-        await self.handle_periodic_claim(ctx, WEEKLY)
-
-    @commands.hybrid_command(name=MONTHLY, description="Claim your monthly lootbox.")
-    async def monthly(self, ctx: commands.Context):
-        await self.handle_periodic_claim(ctx, MONTHLY)
-
-    async def handle_periodic_claim(self, ctx, period_type):
+    @commands.hybrid_command(help="Claim your Daily Weekly and Monthly Lootboxes!")
+    async def claim(self, ctx: commands.Context):
         user_id = ctx.author.id
-        remaining = self.time_until_claim(user_id, period_type)
-        if remaining.total_seconds() > 0:
-            time_str = format_timedelta(remaining)
-            await ctx.send(f"⏳ You can claim your next {period_type} lootbox in **{time_str}**.")
-            return
-
-        tier = Database.roll_loot_tier()
-        Database.add_lootbox(user_id, tier)
-        Database.update_claim_timestamp(user_id, period_type)
-
         embed = discord.Embed(
-            title=f"🎁 {period_type.title()} Lootbox Claimed!",
-            description=f"You received a **{tier.title()}** lootbox!",
-            color=Database.LOOT_TIERS[tier]["color"]
+            color=discord.Color.blurple()
         )
-        message = await ctx.send(embed=embed)
-        claimBtn = ClaimNowButton(user_id, tier, message)
-        await message.edit(view=claimBtn)
+        embed.set_thumbnail(url=ctx.author.avatar.url if ctx.author.avatar else ctx.author.default_avatar.url)
+
+        any_gained = False
+        for period_type in self.BOX_DELTAS:
+            remaining = self.time_until_claim(user_id, period_type)
+            if remaining.total_seconds() > 0:
+                embed.add_field(name=f"{self.DELTA_EMOJIS[period_type]} {period_type.title()}",
+                                value=format_timedelta(remaining), inline=False)
+            else:
+                any_gained = True
+                tier = Database.roll_loot_tier()
+                Database.add_lootbox(user_id, tier)
+                Database.update_claim_timestamp(user_id, period_type)
+                emoji = Database.LOOT_TIERS[tier]["emoji"]
+                embed.add_field(name=f"{self.DELTA_EMOJIS[period_type]} {period_type.title()}",
+                                value=f"{emoji} {tier.title()} Gained!", inline=False)
+
+        if any_gained:
+            embed.title = "🎁 Lootboxes Claimed!"
+            embed.description = "You received some Lootboxes!\nType '/boxes' to view them"
+            embed.description += "\nor '/open_all' to open them now!"
+        else:
+            embed.title = "😔 No Lootboxes yet"
+            embed.description = "Try again later!"
+
+        await ctx.send(embed=embed)
 
     def time_until_claim(self, user_id, period_type):
         timestamps = Database.get_claim_timestamps(user_id)

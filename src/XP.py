@@ -17,7 +17,7 @@ def __get_xp_from_message(message: str):
 
 
 def get_xp_threshold(currLvl):
-    return int((3 * pow(currLvl, 1.5)) + 50)
+    return ((3 * pow(currLvl, 2)) + 100)
 
 
 async def give_from_msg(msg_content: str, user: discord.Member, announce_channel: discord.TextChannel,
@@ -25,6 +25,7 @@ async def give_from_msg(msg_content: str, user: discord.Member, announce_channel
     # Get the amount of xp gained for the message
     xp_gained = __get_xp_from_message(msg_content)
     await __give_xp(xp_gained, user, announce_channel, extra)
+    return xp_gained
 
 
 async def give_from_values(min: int, max: int, user: discord.Member, announce_channel: discord.TextChannel,
@@ -34,6 +35,7 @@ async def give_from_values(min: int, max: int, user: discord.Member, announce_ch
         min = max
     xp_gained = randint(min, max)
     await __give_xp(xp_gained, user, announce_channel, extra)
+    return xp_gained
 
 
 async def __give_xp(xp_amount: int, user: discord.Member, announce_channel: discord.TextChannel, extra: str = None):
@@ -69,7 +71,7 @@ if __name__ == "__main__":
     import numpy as np
 
     # Generate x values (non-negative because of x^1.5)
-    x = np.linspace(0, 100, 400)
+    x = np.linspace(0, 10, 400)
     y = get_xp_threshold(x)
 
     # Plot

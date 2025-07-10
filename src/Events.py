@@ -65,13 +65,17 @@ class Events(commands.Cog):
                                message.channel)
 
     @commands.Cog.listener()
+    async def on_command(self, ctx: commands.Context):
+        args = " ".join(f"{k}={v}" for k, v in ctx.kwargs.items())
+        self.logger.info(f'{ctx.author.display_name} called command [{ctx.command.qualified_name} {args}]')
+
+    @commands.Cog.listener()
     async def on_command_completion(self, ctx: commands.Context):
         # if the message is from a bot, ignore it.
         if ctx.author.bot:
             return
-        args = " ".join(f"{k}={v}" for k, v in ctx.kwargs.items())
-        self.logger.info(f'{ctx.author.display_name} called command [{ctx.command.qualified_name} {args}]')
-        await XP.give_from_values(1, 10, ctx.author, ctx.channel)
+        xp_gained = await XP.give_from_values(1, 5, ctx.author, ctx.channel)
+        self.logger.info(f"{ctx.author.display_name} was awarded {xp_gained} xp for [{ctx.command.qualified_name}]")
 
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload):
@@ -79,9 +83,10 @@ class Events(commands.Cog):
         if payload.user_id == self.bot.user.id:
             return
         # Substitute the message id + user id for the message content
-        await self.__do_xp_give(str(payload.message_id) + str(payload.user_id),
-                                payload.member,
-                                self.bot.get_channel(payload.channel_id))
+        xp_gained = await XP.give_from_msg(str(payload.message_id) + str(payload.user_id),
+                                           payload.member,
+                                           self.bot.get_channel(payload.channel_id))
+        self.logger.info(f"{payload.member.display_name} was awarded {xp_gained} xp for Reacting")
 
     @commands.Cog.listener()
     async def on_voice_state_update(self, member, before, after):
