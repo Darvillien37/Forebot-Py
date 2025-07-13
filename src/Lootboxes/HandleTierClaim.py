@@ -1,6 +1,6 @@
 from discord.ext import commands
 import discord
-from Database import Database
+from Database import Database, Items
 
 
 # Doesn't need to be in class, as doesn't interact with class
@@ -21,7 +21,7 @@ async def handle_tier_claim(tier_type: str, ctx: commands.Context = None,
         return
 
     reward = result
-    color = Database.LOOT_TIERS[tier_type]["color"]
+    color = Items.LOOT_TIERS[tier_type]["color"]
     embed = discord.Embed(
         title=f"{tier_type.title()} Lootbox Opened!",
         description=f"{user.display_name} received **💰 {reward} ForeCoins**!",
@@ -31,4 +31,3 @@ async def handle_tier_claim(tier_type: str, ctx: commands.Context = None,
         await interaction.response.send_message(embed=embed)
     else:
         await ctx.send(embed=embed)
-

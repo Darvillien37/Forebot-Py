@@ -1,4 +1,4 @@
-from Database import Database
+from Database import Database, Items
 from Lootboxes.ClaimView import LootboxClaimView
 from discord.ext import commands
 import discord
@@ -36,7 +36,7 @@ class Lootboxes(commands.Cog):
         )
 
         for tier in box_counts:
-            emoji = Database.LOOT_TIERS[tier]["emoji"]
+            emoji = Items.LOOT_TIERS[tier]["emoji"]
             embed.add_field(name=f"{emoji} {tier.title()}", value=str(box_counts[tier]), inline=True)
         embed.set_thumbnail(url=user.avatar.url if user.avatar else user.default_avatar.url)
         message = await ctx.send(embed=embed)
@@ -59,7 +59,7 @@ class Lootboxes(commands.Cog):
         if not any(count > 0 for count in boxes.values()):
             await ctx.send("❌ You have no lootboxes to claim.", ephemeral=True)
             return
-
+        await ctx.send("Opening your Lootboxes...", ephemeral=True)
         total_coins = 0
         claimed_boxes = []
         for tier, count in boxes.items():
@@ -81,7 +81,7 @@ class Lootboxes(commands.Cog):
         )
 
         for tier, count, tier_total in claimed_boxes:
-            emoji = Database.LOOT_TIERS[tier]["emoji"]
+            emoji = Items.LOOT_TIERS[tier]["emoji"]
             embed.add_field(name=f"{emoji} {count}x {tier.title()}", value=f"💰 {tier_total} Forecoins", inline=True)
 
         embed.set_thumbnail(url=ctx.author.avatar.url if ctx.author.avatar else ctx.author.default_avatar.url)
@@ -106,7 +106,7 @@ class Lootboxes(commands.Cog):
                 tier = Database.roll_loot_tier()
                 Database.add_lootbox(user_id, tier)
                 Database.update_claim_timestamp(user_id, period_type)
-                emoji = Database.LOOT_TIERS[tier]["emoji"]
+                emoji = Items.LOOT_TIERS[tier]["emoji"]
                 embed.add_field(name=f"{self.DELTA_EMOJIS[period_type]} {period_type.title()}",
                                 value=f"{emoji} {tier.title()} Gained!", inline=False)
 

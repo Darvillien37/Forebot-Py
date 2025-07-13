@@ -1,6 +1,6 @@
 from discord.ui import View, Button
 import discord
-from Database import Database
+from Database import Items
 from Lootboxes import HandleTierClaim
 # from Lootboxes.Lootboxes import Lootboxes
 
@@ -25,9 +25,9 @@ class LootboxClaimView(View):
             await self.original_message.edit(view=self)
 
     def make_button(self, tier):
-        emoji = Database.LOOT_TIERS[tier]["emoji"]
+        emoji = Items.LOOT_TIERS[tier]["emoji"]
         label = f"{emoji} {tier.title()}"
-        # colour = Database.LOOT_TIERS[tier]["color"]
+        # colour = Items.LOOT_TIERS[tier]["color"]
 
         # Convert color to ButtonStyle
         style = discord.ButtonStyle.primary

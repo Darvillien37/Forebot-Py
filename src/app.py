@@ -43,11 +43,13 @@ RESOURCE_PATH = os.path.abspath(os.path.normpath(config['resource_path']))
 DB_FILE = os.path.abspath(os.path.normpath(config['db_file']))
 PREFIX = config['prefix']
 LOG_PATH = os.path.abspath(os.path.normpath(config['log_path']))
+print("Searching for Log path.")
 if not os.path.exists(LOG_PATH):
     print(f"Log Path doesn't exist: {LOG_PATH}")
     exit(1)
+print("Searching for Resource path.")
 if not os.path.exists(RESOURCE_PATH):
-    print(f"Resource Path doesn't exist: {LOG_PATH}")
+    print(f"Resource Path doesn't exist: {RESOURCE_PATH}")
     exit(1)
 
 

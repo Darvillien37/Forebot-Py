@@ -37,11 +37,11 @@ class Fun(commands.Cog):
         ]
         await ctx.send(','.join(dice))
 
-    @commands.hybrid_command(help='Gime a Foreman!')
+    @commands.hybrid_command(help='Gime a Foreman! Costs 10 💰!')
     async def foreman(self, ctx: commands.Context):
         coins = Database.get_coins(ctx.author.id)
-        if coins > 0:
-            Database.update_coins(ctx.author.id, -1)
+        if coins >= 10:
+            Database.update_coins(ctx.author.id, -10)
             files = os.listdir(self.res + '/Foremans/')
             d = random.choice(files)
             await ctx.send(

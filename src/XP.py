@@ -1,6 +1,6 @@
 import discord
 from random import randint
-from Database import Database
+from Database import Database, Items
 from Lootboxes.ClaimNowButton import ClaimNowButton
 
 
@@ -49,7 +49,7 @@ async def __give_xp(xp_amount: int, user: discord.Member, announce_channel: disc
         level += 1
         tier = Database.roll_loot_tier()
         Database.add_lootbox(user.id, tier)
-        color = discord.Color(Database.LOOT_TIERS[tier]["color"])
+        color = discord.Color(Items.LOOT_TIERS[tier]["color"])
         embed = discord.Embed(
             title="🆙 Level Up!",
             description=(
