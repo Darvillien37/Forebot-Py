@@ -1,4 +1,5 @@
 import traceback
+import discord
 from discord.ext import commands
 import XP
 from Database import Database
@@ -8,14 +9,14 @@ class Events(commands.Cog):
     '''
     A Cog class for general discord bot event listeners
     '''
-    def __init__(self, bot, logger):
+    def __init__(self, bot: commands.bot, logger):
         '''
         Constructor for the Cog General class.
         Keyword arguments:
         bot -- discord bot object.
         logger -- the logger to log to.
         '''
-        self.bot = bot
+        self.bot: commands.bot = bot
         self.logger = logger
 
     @commands.Cog.listener()
@@ -53,16 +54,22 @@ class Events(commands.Cog):
             return
 
     @commands.Cog.listener()
-    async def on_message(self, message):
+    async def on_message(self, message: discord.Message):
         # if the message is from this bot, ignore it.
         if message.author == self.bot.user:
             return
         if message.author.bot:
             return
 
-        await XP.give_from_msg(message.content,
-                               message.author,
-                               message.channel)
+        if len(message.content) > 0:
+            await XP.give_from_msg(message.content,
+                                   message.author,
+                                   message.channel,
+                                   "For cheeky Banter!")
+
+        upper = 10 * len(message.attachments)
+        if upper > 0:
+            await XP.give_from_values(1, upper, message.author, message.channel, "For that sick image!")
 
     @commands.Cog.listener()
     async def on_command(self, ctx: commands.Context):
@@ -74,19 +81,25 @@ class Events(commands.Cog):
         # if the message is from a bot, ignore it.
         if ctx.author.bot:
             return
-        xp_gained = await XP.give_from_values(1, 5, ctx.author, ctx.channel)
+        xp_gained = await XP.give_from_values(1, 5, ctx.author, ctx.channel, f"For that {ctx.command.qualified_name}!")
         self.logger.info(f"{ctx.author.display_name} was awarded {xp_gained} xp for [{ctx.command.qualified_name}]")
 
     @commands.Cog.listener()
-    async def on_raw_reaction_add(self, payload):
+    async def on_raw_reaction_add(self, payload: discord.RawReactionActionEvent):
         # if the message is from this bot, ignore it.
         if payload.user_id == self.bot.user.id:
             return
-        # Substitute the message id + user id for the message content
-        xp_gained = await XP.give_from_msg(str(payload.message_id) + str(payload.user_id),
-                                           payload.member,
-                                           self.bot.get_channel(payload.channel_id))
+
+        xp_gained = await XP.give_from_values(1, 10, payload.member, self.bot.get_channel(payload.channel_id), "Using those sick emotes!")
         self.logger.info(f"{payload.member.display_name} was awarded {xp_gained} xp for Reacting")
+
+        # Give the Reaction Receiver XP as well, only if they aren't the reaction giver
+        if payload.message_author_id != payload.user_id:
+            author_user = self.bot.get_user(payload.message_author_id)
+            if author_user is not None and author_user.bot is False:
+                xp_gained = await XP.give_from_values(1, 10, author_user, self.bot.get_channel(payload.channel_id),
+                                                      "For receiving those sweet emotes! :smile:")
+                self.logger.info(f"{author_user.display_name} was awarded {xp_gained} xp for Receiving a Reaction")
 
     @commands.Cog.listener()
     async def on_voice_state_update(self, member, before, after):

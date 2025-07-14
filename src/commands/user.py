@@ -4,7 +4,7 @@ from discord.ext import commands
 import discord
 
 
-class Other(commands.Cog):
+class User(commands.Cog):
     def __init__(self, bot, logger):
         self.bot = bot
         self.logger = logger
@@ -23,7 +23,7 @@ class Other(commands.Cog):
     #     await ctx.send("Link to the Forebot github:"
     #                    " https://github.com/Darvillien37/Forebot-Py")
 
-    @commands.hybrid_command(aliases=['stats'], help='Get info about a user, or yourself')
+    @commands.hybrid_command(help='Get info about a user, or yourself')
     async def info(self, ctx, member: discord.Member = None):
         member = member or ctx.author
 
@@ -34,7 +34,7 @@ class Other(commands.Cog):
         myEmbed.set_thumbnail(url=member.avatar.url)
         myEmbed.add_field(name="XP",        value=f"{xp}/{threshold}", inline=True)
         myEmbed.add_field(name="Level",     value=f"{level}", inline=True)
-        myEmbed.add_field(name="ForeCoins",  value=f"{coins}", inline=True)
+        myEmbed.add_field(name="ForeCoins", value=f"{coins}", inline=True)
 
         await ctx.send(embed=myEmbed)
 

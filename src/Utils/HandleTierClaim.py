@@ -4,8 +4,7 @@ from Database import Database, Items
 
 
 # Doesn't need to be in class, as doesn't interact with class
-async def handle_tier_claim(tier_type: str, ctx: commands.Context = None,
-                            interaction: discord.Interaction = None):
+async def handle_tier_claim(tier_type: str, ctx: commands.Context = None, interaction: discord.Interaction = None):
     if ctx is None:
         user = interaction.user
     else:

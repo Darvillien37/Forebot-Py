@@ -1,7 +1,7 @@
 from discord.ui import View, Button
 import discord
 from Database import Items
-from Lootboxes import HandleTierClaim
+from Utils import HandleTierClaim
 # from Lootboxes.Lootboxes import Lootboxes
 
 

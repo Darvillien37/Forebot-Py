@@ -1,7 +1,7 @@
 import discord
 from random import randint
 from Database import Database, Items
-from Lootboxes.ClaimNowButton import ClaimNowButton
+from views.ClaimNowButton import ClaimNowButton
 
 
 def __get_xp_from_message(message: str):
@@ -20,25 +20,23 @@ def get_xp_threshold(currLvl):
     return ((3 * pow(currLvl, 2)) + 100)
 
 
-async def give_from_msg(msg_content: str, user: discord.Member, announce_channel: discord.TextChannel,
-                        extra: str = None):
+async def give_from_msg(msg_content: str, user: discord.Member, announce_channel: discord.TextChannel, reason: str = None):
     # Get the amount of xp gained for the message
     xp_gained = __get_xp_from_message(msg_content)
-    await __give_xp(xp_gained, user, announce_channel, extra)
+    await __give_xp(xp_gained, user, announce_channel, reason)
     return xp_gained
 
 
-async def give_from_values(min: int, max: int, user: discord.Member, announce_channel: discord.TextChannel,
-                           extra: str = None):
+async def give_from_values(min: int, max: int, user: discord.Member, announce_channel: discord.TextChannel, reason: str = None):
     # error check to make sure min not less than max
     if min > max:
         min = max
     xp_gained = randint(min, max)
-    await __give_xp(xp_gained, user, announce_channel, extra)
+    await __give_xp(xp_gained, user, announce_channel, reason)
     return xp_gained
 
 
-async def __give_xp(xp_amount: int, user: discord.Member, announce_channel: discord.TextChannel, extra: str = None):
+async def __give_xp(xp_amount: int, user: discord.Member, announce_channel: discord.TextChannel, reason: str = None):
     (xp, level) = Database.get_user_xp_level(user.id)
     xp += xp_amount
     threshold = get_xp_threshold(level)
@@ -54,7 +52,7 @@ async def __give_xp(xp_amount: int, user: discord.Member, announce_channel: disc
             title="🆙 Level Up!",
             description=(
                 f"{user.mention} reached **Level {level}**!\n"
-                f"{extra if extra else ''}\n"
+                f"{reason if reason else ''}\n"
                 f"🎁 You've earned a **{tier.title().upper()} Lootbox**!"
             ),
             color=color

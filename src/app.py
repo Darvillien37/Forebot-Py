@@ -6,16 +6,16 @@ import logging
 import json
 import discord
 import Database.Database as Database
-from commands.Economy import Economy
+from commands.economy import Economy
 # from loops.startUpLoops import StartUpLoops
 from Events import Events
 from commands.greetings import Greetings
-from Lootboxes.Lootboxes import Lootboxes
+from commands.lootboxes import Lootboxes
 from commands.fun import Fun
 from commands.admin import Admin
 # from commands.owner import Owner
-from commands.other import Other
-from commands.EasterEggs import EasterEggs
+from commands.user import User
+from commands.easterEggs import EasterEggs
 from loops.VoiceLoops import VoiceXPLoop
 
 
@@ -90,7 +90,7 @@ async def setup():
 
     await bot.add_cog(Admin(bot, logger))
     # await bot.add_cog(Owner(bot, logger))
-    await bot.add_cog(Other(bot, logger))
+    await bot.add_cog(User(bot, logger))
     await bot.add_cog(EasterEggs(bot, logger))
 
 asyncio.run(setup())

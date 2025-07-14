@@ -1,5 +1,5 @@
 from Database import Database, Items
-from Lootboxes.ClaimView import LootboxClaimView
+from views.ClaimView import LootboxClaimView
 from discord.ext import commands
 import discord
 from datetime import datetime, timezone, timedelta

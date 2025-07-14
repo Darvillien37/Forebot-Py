@@ -1,6 +1,6 @@
 import discord
 from discord.ui import View, Button
-from Lootboxes import HandleTierClaim
+from Utils import HandleTierClaim
 
 
 class ClaimNowButton(View):
