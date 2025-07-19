@@ -17,7 +17,7 @@ def __get_xp_from_message(message: str):
 
 
 def get_xp_threshold(currLvl):
-    return ((3 * pow(currLvl, 2)) + 100)
+    return ((3 * pow(currLvl, 1.5)) + 100)
 
 
 async def give_from_msg(msg_content: str, user: discord.Member, announce_channel: discord.TextChannel, reason: str = None):

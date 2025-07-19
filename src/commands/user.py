@@ -1,7 +1,9 @@
-from Database import Database
+from Database import Database, attributes
 import XP
 from discord.ext import commands
 import discord
+
+from views.AttributeUpgradeView import AttributeUpgradeView
 
 
 class User(commands.Cog):
@@ -37,6 +39,25 @@ class User(commands.Cog):
         myEmbed.add_field(name="ForeCoins", value=f"{coins}", inline=True)
 
         await ctx.send(embed=myEmbed)
+
+    @commands.hybrid_command(aliases=['stats'])
+    @discord.app_commands.describe(show_tips="Whether to show attribute descriptions")
+    async def attributes(self, ctx: commands.Context, show_tips: bool = False):
+        user_id = ctx.author.id
+        attr_data = Database.get_user_attributes(user_id)
+
+        embed = attributes.build_attribute_embed(ctx.author, attr_data, show_tips)
+        view = None
+        message = await ctx.send(embed=embed, view=view)
+
+        if attr_data['unspent_points'] > 0:
+            view = AttributeUpgradeView(bot=self.bot,
+                                        member=ctx.author,
+                                        attr_dict=attr_data,
+                                        original_embed=embed,
+                                        original_message=message,
+                                        show_tips=show_tips)
+        await message.edit(view=view)
 
     # @commands.command(aliases=['tt'], help='Get the top 10 people in the guild')
     # async def topTen(self, ctx):

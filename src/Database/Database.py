@@ -2,6 +2,9 @@ import random
 from datetime import datetime, timezone
 import sqlite3
 from Database import Items
+from Database import attributes
+from Database.attributes import ATTR_UNSPENT_POINTS, ATTR_VITALITY, ATTR_BRAWN, ATTR_DEXTERITY, ATTR_MIND, ATTR_RESILIENCE, ATTR_AWARENESS
+from Database.attributes import ATTR_WILLPOWER, ATTR_ACCURACY, ATTR_SPEED, ATTR_LUCK, ATTR_SMOOTH_TALKING
 from Utils.utils import DAILY, WEEKLY, MONTHLY, TIME_FORMAT
 
 
@@ -55,6 +58,44 @@ def init_db(db_file):
     Items.ensure_items_exist(_db_file)
     print("converting user boxes to items")
     user_lootboxes_to_items()
+    __ensure_table_and_columns("user_attributes", {
+                        "user_id": "INTEGER PRIMARY KEY",
+                        ATTR_VITALITY: "INTEGER DEFAULT 0",
+                        ATTR_BRAWN: "INTEGER DEFAULT 0",
+                        ATTR_DEXTERITY: "INTEGER DEFAULT 0",
+                        ATTR_MIND: "INTEGER DEFAULT 0",
+                        ATTR_RESILIENCE: "INTEGER DEFAULT 0",
+                        ATTR_AWARENESS: "INTEGER DEFAULT 0",
+                        ATTR_WILLPOWER: "INTEGER DEFAULT 0",
+                        ATTR_ACCURACY: "INTEGER DEFAULT 0",
+                        ATTR_SPEED: "INTEGER DEFAULT 0",
+                        ATTR_LUCK: "INTEGER DEFAULT 0",
+                        ATTR_SMOOTH_TALKING: "INTEGER DEFAULT 0",
+                        ATTR_UNSPENT_POINTS:  "INTEGER DEFAULT 10",
+                        },
+                        {
+                        "FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE"
+                        })
+    __ensure_table_and_columns("attribute_modifiers", {
+                        "id": "INTEGER PRIMARY KEY AUTOINCREMENT",
+                        "user_id": "INTEGER NOT NULL",
+                        "source": "TEXT NOT NULL",  # e.g. "Potion of Might", "Event: Lunar Eclipse"
+                        "expires_at": "TEXT NOT NULL",  # TIME_FORMAT
+                        ATTR_VITALITY: "INTEGER DEFAULT 0",
+                        ATTR_BRAWN: "INTEGER DEFAULT 0",
+                        ATTR_DEXTERITY: "INTEGER DEFAULT 0",
+                        ATTR_MIND: "INTEGER DEFAULT 0",
+                        ATTR_RESILIENCE: "INTEGER DEFAULT 0",
+                        ATTR_AWARENESS: "INTEGER DEFAULT 0",
+                        ATTR_WILLPOWER: "INTEGER DEFAULT 0",
+                        ATTR_ACCURACY: "INTEGER DEFAULT 0",
+                        ATTR_SPEED: "INTEGER DEFAULT 0",
+                        ATTR_LUCK: "INTEGER DEFAULT 0",
+                        ATTR_SMOOTH_TALKING: "INTEGER DEFAULT 0",
+                        },
+                        {
+                        "FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE"
+                        })
 
 
 def user_lootboxes_to_items():
@@ -136,17 +177,13 @@ def dt_testing():
     global _db_file
     check_user(202112441457442816)
     commands = [
-            "UPDATE users SET xp=100, level=1 WHERE user_id=202112441457442816",
+            "UPDATE users SET xp=1000, level=1 WHERE user_id=202112441457442816",
     ]
     with sqlite3.connect(_db_file) as conn:
         c = conn.cursor()
         for cmd in commands:
             c.execute(cmd)
             conn.commit()
-    # add_lootbox(202112441457442816, roll_loot_tier())
-    print(f"voice: {get_last_voice_xp(202112441457442816)}")
-    for _ in range(1000):
-        add_lootbox(202112441457442816, roll_loot_tier())
 
 
 # ------------------ USER STUFF ------------------
@@ -155,6 +192,7 @@ def check_user(user_id):
     with sqlite3.connect(_db_file) as conn:
         c = conn.cursor()
         c.execute("INSERT OR IGNORE INTO users (user_id) VALUES (?)", (user_id,))
+        c.execute("INSERT OR IGNORE INTO user_attributes (user_id) VALUES (?)", (user_id,))
         conn.commit()
 
 
@@ -446,3 +484,33 @@ def set_guild_spam_channel_id(guild_id: int, channel_id: int):
         c = conn.cursor()
         c.execute('UPDATE guilds SET bot_spam_ch_id = ? WHERE guild_id = ?', (channel_id, guild_id))
         conn.commit()
+
+
+# ------------------ Attributes STUFF ------------------
+
+def get_user_attributes(user_id: int):
+    check_user(user_id)
+    attr_columns = ', '.join(attr for attr in attributes.ATTR_LIST)
+    with sqlite3.connect(_db_file) as conn:
+        c = conn.cursor()
+        c.execute(f"SELECT {attr_columns}, {ATTR_UNSPENT_POINTS} FROM user_attributes WHERE user_id = {user_id}")
+        row = c.fetchone()
+        if not row:
+            c.execute(f"INSERT INTO user_attributes (user_id) VALUES ({user_id})")
+            conn.commit()
+            row = ((0,) * len(attributes.ATTR_LIST)) + (10,)   # All stats and 10 unspent
+        keys = [col[0] for col in c.description]
+        keys.append(ATTR_UNSPENT_POINTS)
+        return dict(zip(keys, row))
+
+
+def increase_attribute(user_id: int, attribute: str):
+    if attribute in attributes.ATTR_LIST:
+        with sqlite3.connect(_db_file) as conn:
+            c = conn.cursor()
+            c.execute(f"""
+                UPDATE user_attributes
+                SET {attribute} = {attribute} + 1, {ATTR_UNSPENT_POINTS} = {ATTR_UNSPENT_POINTS} - 1
+                WHERE user_id = {user_id} AND unspent_points > 0
+            """)
+            conn.commit()

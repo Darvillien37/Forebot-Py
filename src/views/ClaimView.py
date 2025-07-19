@@ -6,7 +6,8 @@ from Utils import HandleTierClaim
 
 
 class LootboxClaimView(View):
-    def __init__(self, bot, user_id: int, boxes, cog_ref, original_embed: discord.Embed,
+    def __init__(self, bot, user_id: int, boxes, cog_ref, 
+                 original_embed: discord.Embed,
                  original_message: discord.Message):
         super().__init__(timeout=60)
         self.bot = bot
