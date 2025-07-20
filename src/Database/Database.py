@@ -274,6 +274,21 @@ def get_all_user_ids(file=None):
         return user_ids
 
 
+def get_users_ordered(ids=None):
+    global _db_file
+    cmd = "SELECT user_id, xp, level, coins FROM users"
+    if ids is not None:
+        ids_str = ", ".join(ids)
+        cmd += f' WHERE user_id IN ({ids_str})'
+    cmd += " ORDER BY level DESC, xp DESC"
+    user_data = []
+    with sqlite3.connect(_db_file) as conn:
+        c = conn.cursor()
+        c.execute(cmd)
+        user_data = c.fetchall()
+    return user_data
+
+
 # ------------------ INVENTORY STUFF ------------------
 def update_inventory_item_quantity(user_id: int, item_id: int, delta: int):
     global _db_file

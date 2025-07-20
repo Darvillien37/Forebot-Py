@@ -10,6 +10,7 @@ class User(commands.Cog):
     def __init__(self, bot, logger):
         self.bot = bot
         self.logger = logger
+        self.medals = ["🥇", "🥈", "🥉"]
 
     # @commands.command(help='Check the progress of Forebots development')
     # async def trello(self, ctx):
@@ -40,7 +41,7 @@ class User(commands.Cog):
 
         await ctx.send(embed=myEmbed)
 
-    @commands.hybrid_command(aliases=['stats'])
+    @commands.hybrid_command(aliases=['stats'], help="View and assign your attributes.")
     @discord.app_commands.describe(show_tips="Whether to show attribute descriptions")
     async def attributes(self, ctx: commands.Context, show_tips: bool = False):
         user_id = ctx.author.id
@@ -59,30 +60,77 @@ class User(commands.Cog):
                                         show_tips=show_tips)
         await message.edit(view=view)
 
-    # @commands.command(aliases=['tt'], help='Get the top 10 people in the guild')
-    # async def topTen(self, ctx):
-    #     self.logger.info(f'{ctx.author.name} getting Top 10 for: {ctx.guild.name}')
-    #     # Get the top 10 users
-    #     top_ten = Users.top_ten(ctx.guild.id)
+    @commands.hybrid_command(name="topten", help="View the top 10 people in this guild.")
+    @discord.app_commands.describe(global_leaderboard="Whether to show the Global top 10, and not just this guild.")
+    async def top_ten(self, ctx: commands.Context, global_leaderboard: bool = False):
+        ids = None
+        title = "🌍 Global Top 10"
+        embed_thumb = None
+        if global_leaderboard is False:
+            if ctx.guild.icon is not None:
+                embed_thumb = ctx.guild.icon.url
+            title = f"🏆 Top 10 in {ctx.guild.name}"
+            ids = []
+            for member in ctx.guild.members:
+                ids.append(str(member.id))
 
-    #     # Create an embed
-    #     myEmbed = discord.Embed(title=f"{ctx.guild.name} Top Ten Members", color=0x0000ff)
-    #     myEmbed.set_thumbnail(url=ctx.guild.icon_url)
+        user_data = Database.get_users_ordered(ids)
+        embed = discord.Embed(title=title, color=discord.Color.blurple())
+        embed.set_thumbnail(url=embed_thumb)
+        if not user_data:
+            embed.description = "No users found!"
+        else:
 
-    #     # Create a field for all the users
-    #     for user in top_ten:
-    #         member = ctx.guild.get_member(int(user['ID']))
-    #         if member is None:
-    #             continue
-    #         # prefer guild nicknames
-    #         if member.nick is None:
-    #             name = member.name
-    #         else:
-    #             name = member.nick
+            for i, (user_id, xp, level, coins) in enumerate(user_data, start=1):
+                emoji = self.medals[i - 1] if i <= len(self.medals) else f"#{i}"
+                user = self.bot.get_user(user_id)
+                name = user.display_name if user else f"<@{user_id}>"
+                embed.add_field(
+                    name=f"{emoji} - {name}",
+                    value=f"Level {level} • {xp} XP\nCoins {coins}",
+                    inline=True
+                )
+                if i >= 10:
+                    break
+        await ctx.send(embed=embed)
 
-    #         myEmbed.add_field(name=name,
-    #                           value=f"Lvl: {user['level']}\n"
-    #                                 f"Exp: {user['experience']}",
-    #                           inline=True)
+    @commands.hybrid_command(name="rank", description="Shows your current ranking.")
+    @discord.app_commands.describe(show_global="Check your global rank.")
+    @discord.app_commands.describe(member="The member to check the rank of.")
+    async def rank(self,  ctx: commands.Context, member: discord.Member = None, show_global: bool = False):
+        if member:
+            user = member
+        else:
+            user = ctx.author
+        ids = None
+        title = f"🌍 {user.display_name}'s Global Rank"
+        embed_thumb = None
+        if show_global is False:
+            if ctx.guild.icon is not None:
+                embed_thumb = ctx.guild.icon.url
+            title = f"📊 {user.display_name}'s Rank in {ctx.guild.name}"
+            ids = []
+            for member in ctx.guild.members:
+                ids.append(str(member.id))
 
-    #     await ctx.send(embed=myEmbed)
+        user_data = Database.get_users_ordered(ids)
+        rank = None
+        xp = 0
+        level = 0
+        emoji = ""
+        for i, (uid, uxp, ulevel, _) in enumerate(user_data, start=1):
+            if user.id == uid:
+                emoji = self.medals[i - 1] if i <= len(self.medals) else ""
+                rank = i
+                xp = uxp
+                level = ulevel
+                break
+
+        if rank is None:
+            desc = "You haven't earned any XP yet!"
+        else:
+            desc = f"You're ranked {emoji}**#{rank}**{emoji} — Level **{level}** • **{xp}** XP."
+
+        embed = discord.Embed(title=title, description=desc, color=discord.Color.blue())
+        embed.set_thumbnail(url=embed_thumb)
+        await ctx.send(embed=embed)

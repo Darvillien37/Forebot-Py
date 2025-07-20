@@ -16,8 +16,14 @@ def __get_xp_from_message(message: str):
     return amount
 
 
-def get_xp_threshold(currLvl):
-    return ((3 * pow(currLvl, 1.5)) + 100)
+def get_xp_threshold(currLvl, ret_float: bool = False):
+    a = 3
+    b = 1.5
+    c = 100
+    if ret_float:
+        return (a * pow(currLvl, b)) + c
+    else:
+        return int((a * pow(currLvl, b)) + c)
 
 
 async def give_from_msg(msg_content: str, user: discord.Member, announce_channel: discord.TextChannel, reason: str = None):
@@ -69,12 +75,12 @@ if __name__ == "__main__":
     import numpy as np
 
     # Generate x values (non-negative because of x^1.5)
-    x = np.linspace(0, 10, 400)
-    y = get_xp_threshold(x)
+    x = np.linspace(0, 1000, 400)
+    y = get_xp_threshold(x, True)
 
     # Plot
     plt.figure(figsize=(8, 5))
-    plt.plot(x, y, label=r'$y = 3x^{1.5} + 100$', color='blue')
+    plt.plot(x, y, color='blue')
     plt.xlabel('Level')
     plt.ylabel('XP')
     plt.grid(True)
