@@ -27,7 +27,8 @@ class User(commands.Cog):
     #                    " https://github.com/Darvillien37/Forebot-Py")
 
     @commands.hybrid_command(help='Get info about a user, or yourself')
-    async def info(self, ctx, member: discord.Member = None):
+    @discord.app_commands.describe(member="The member to check the info of.")
+    async def info(self, ctx: commands.Context, member: discord.Member = None):
         member = member or ctx.author
 
         user = Database.get_user(member.id)
@@ -35,9 +36,28 @@ class User(commands.Cog):
         threshold = XP.get_xp_threshold(level)
         myEmbed = discord.Embed(title=f"{member.display_name}'s info:", color=discord.Color.gold())
         myEmbed.set_thumbnail(url=member.avatar.url)
-        myEmbed.add_field(name="XP",        value=f"{xp}/{threshold}", inline=True)
-        myEmbed.add_field(name="Level",     value=f"{level}", inline=True)
-        myEmbed.add_field(name="ForeCoins", value=f"{coins}", inline=True)
+        myEmbed.add_field(name="📈 XP",        value=f"{xp}/{threshold}", inline=True)
+        myEmbed.add_field(name="🌟 Level",     value=f"{level}", inline=True)
+        myEmbed.add_field(name="💰 Forecoins", value=f"{coins}", inline=True)
+
+        user_data = Database.get_users_ordered()
+        guild_rank = 0
+        global_rank = 0
+        guild_ids = []
+        for m in ctx.guild.members:
+            guild_ids.append(m.id)
+
+        for i, (uid, uxp, ulevel, _) in enumerate(user_data, start=1):
+            global_rank += 1
+            if uid in guild_ids:
+                guild_rank += 1
+            if uid == member.id:
+                break  # requested member found
+        emoji = self.medals[guild_rank - 1] if guild_rank <= len(self.medals) else ""
+        myEmbed.add_field(name="📊 Server Rank", value=f"{emoji}#{guild_rank}{emoji}", inline=True)
+
+        emoji = self.medals[global_rank - 1] if global_rank <= len(self.medals) else ""
+        myEmbed.add_field(name="🌍 Global Rank", value=f"{emoji}#{global_rank}{emoji}", inline=True)
 
         await ctx.send(embed=myEmbed)
 
@@ -92,45 +112,4 @@ class User(commands.Cog):
                 )
                 if i >= 10:
                     break
-        await ctx.send(embed=embed)
-
-    @commands.hybrid_command(name="rank", description="Shows your current ranking.")
-    @discord.app_commands.describe(show_global="Check your global rank.")
-    @discord.app_commands.describe(member="The member to check the rank of.")
-    async def rank(self,  ctx: commands.Context, member: discord.Member = None, show_global: bool = False):
-        if member:
-            user = member
-        else:
-            user = ctx.author
-        ids = None
-        title = f"🌍 {user.display_name}'s Global Rank"
-        embed_thumb = None
-        if show_global is False:
-            if ctx.guild.icon is not None:
-                embed_thumb = ctx.guild.icon.url
-            title = f"📊 {user.display_name}'s Rank in {ctx.guild.name}"
-            ids = []
-            for member in ctx.guild.members:
-                ids.append(str(member.id))
-
-        user_data = Database.get_users_ordered(ids)
-        rank = None
-        xp = 0
-        level = 0
-        emoji = ""
-        for i, (uid, uxp, ulevel, _) in enumerate(user_data, start=1):
-            if user.id == uid:
-                emoji = self.medals[i - 1] if i <= len(self.medals) else ""
-                rank = i
-                xp = uxp
-                level = ulevel
-                break
-
-        if rank is None:
-            desc = "You haven't earned any XP yet!"
-        else:
-            desc = f"You're ranked {emoji}**#{rank}**{emoji} — Level **{level}** • **{xp}** XP."
-
-        embed = discord.Embed(title=title, description=desc, color=discord.Color.blue())
-        embed.set_thumbnail(url=embed_thumb)
         await ctx.send(embed=embed)

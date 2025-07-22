@@ -59,7 +59,7 @@ class Lootboxes(commands.Cog):
         if not any(count > 0 for count in boxes.values()):
             await ctx.send("❌ You have no lootboxes to claim.", ephemeral=True)
             return
-        await ctx.send("Opening your Lootboxes...", ephemeral=True)
+        msg = await ctx.send("Opening your Lootboxes...")
         total_coins = 0
         claimed_boxes = []
         for tier, count in boxes.items():
@@ -85,7 +85,7 @@ class Lootboxes(commands.Cog):
             embed.add_field(name=f"{emoji} {count}x {tier.title()}", value=f"💰 {tier_total} Forecoins", inline=True)
 
         embed.set_thumbnail(url=ctx.author.avatar.url if ctx.author.avatar else ctx.author.default_avatar.url)
-        await ctx.send(embed=embed)
+        await msg.edit(content=None, embed=embed)
 
     @commands.hybrid_command(help="Claim your Daily Weekly and Monthly Lootboxes!")
     async def claim(self, ctx: commands.Context):
