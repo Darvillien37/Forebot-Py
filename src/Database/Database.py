@@ -1,6 +1,7 @@
 import random
 from datetime import datetime, timezone
 import sqlite3
+import logging
 from Database import Items
 from Database import attributes
 from Database.attributes import ATTR_UNSPENT_POINTS, ATTR_VITALITY, ATTR_BRAWN, ATTR_DEXTERITY, ATTR_MIND, ATTR_RESILIENCE, ATTR_AWARENESS
@@ -9,6 +10,7 @@ from Utils.utils import DAILY, WEEKLY, MONTHLY, TIME_FORMAT
 
 
 _db_file = None
+_db_logger: logging.Logger = None
 
 
 def roll_loot_tier():
@@ -17,13 +19,16 @@ def roll_loot_tier():
     return random.choices(tiers, weights=weights, k=1)[0]
 
 
-def init_db(db_file):
+def init_db(db_file, logger: logging.Logger):
     global _db_file
+    global _db_logger
     _db_file = db_file
+    _db_logger = logger
+    _db_logger.info("Initialising Database")
     __ensure_table_and_columns("users", {
                         "user_id": "INTEGER PRIMARY KEY",
                         "xp": "INTEGER DEFAULT 0",
-                        "level": "INTEGER DEFAULT 1",
+                        "level": "INTEGER DEFAULT 0",
                         "coins": "INTEGER DEFAULT 0",
                         "last_daily": "TEXT DEFAULT NULL",
                         "last_weekly": "TEXT DEFAULT NULL",
@@ -145,7 +150,6 @@ def __ensure_table_and_columns(table_name, columns: dict, extra_lines=None):
     """
     with sqlite3.connect(_db_file) as conn:
         cursor = conn.cursor()
-
         # Check if table exists
         cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name=?", (table_name,))
         exists = cursor.fetchone()
@@ -157,9 +161,8 @@ def __ensure_table_and_columns(table_name, columns: dict, extra_lines=None):
             if extra_lines is not None:
                 extra = ", " + (', '.join([f"{line}" for line in extra_lines]))
             create_stmt = f"CREATE TABLE {table_name} ({col_defs}{extra})"
-            print(create_stmt)
+            _db_logger.info(f"Created table {table_name}")
             cursor.execute(create_stmt)
-            print(f"Created table {table_name}")
         else:
             # Get existing columns
             cursor.execute(f"PRAGMA table_info({table_name})")
@@ -169,7 +172,7 @@ def __ensure_table_and_columns(table_name, columns: dict, extra_lines=None):
             for col, definition in columns.items():
                 if col not in existing_cols:
                     cursor.execute(f"ALTER TABLE {table_name} ADD COLUMN {col} {definition}")
-                    print(f"Added missing column '{col}' to {table_name}")
+                    _db_logger.info(f"Added missing column '{col}' to {table_name}")
         conn.commit()
 
 
@@ -529,3 +532,40 @@ def increase_attribute(user_id: int, attribute: str):
                 WHERE user_id = {user_id} AND unspent_points > 0
             """)
             conn.commit()
+
+
+def attribute_update_all_users():
+    with sqlite3.connect(_db_file) as conn:
+        c = conn.cursor()
+        c.execute("SELECT user_id, level FROM users")
+        all_users = c.fetchall()
+    for user_id, level in all_users:
+        recalculate_user_attribute_points(user_id, level)
+
+
+def recalculate_user_attribute_points(user_id: int, level: int):
+    _db_logger.info(f"Fixing unspent attribute points for [{user_id}] Level: {level}")
+    check_user(user_id)
+    expected_total = attributes.get_bonus_points_upto_level(level)
+    attr_columns = ', '.join(attr for attr in attributes.ATTR_LIST)
+    with sqlite3.connect(_db_file) as conn:
+        c = conn.cursor()
+        c.execute(f"SELECT {attr_columns}, {ATTR_UNSPENT_POINTS} FROM user_attributes WHERE user_id = {user_id}")
+        row = c.fetchone()
+    if not row:
+        _db_logger.info(f"User {user_id} has no attributes.")
+        return
+    total_assigned = sum(row[:-1])
+    unassigned = row[-1]
+    actual_total = total_assigned + unassigned
+
+    if actual_total != expected_total:
+        new_unassigned = expected_total-total_assigned
+        new_unassigned = max(0, new_unassigned)  # prevent negative
+        with sqlite3.connect(_db_file) as conn:
+            c = conn.cursor()
+            c.execute(f"UPDATE user_attributes SET {ATTR_UNSPENT_POINTS} = {new_unassigned} WHERE user_id = {user_id}")
+            conn.commit()
+        _db_logger.debug(f"Fixed user [{user_id}]: Unassigned points set to {new_unassigned}")
+    else:
+        _db_logger.debug(f"User [{user_id}] Level [{level}] already has correct total: {actual_total} points")

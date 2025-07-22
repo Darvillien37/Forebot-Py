@@ -56,17 +56,32 @@ if not os.path.exists(RESOURCE_PATH):
 # ------------------ LOGGER ------------------
 logger = logging.getLogger('discord')
 logger.setLevel(logging.DEBUG)
+databaseLogger = logging.getLogger('database')
+databaseLogger.setLevel(logging.DEBUG)
+
 now_str = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 # now_str = "now"
+file_handler = logging.FileHandler(filename=f"{LOG_PATH}/forebot_{now_str}.log", encoding='utf-8', mode='w')
+dt_fmt = '%Y-%m-%d %H:%M:%S'
+file_formatter = logging.Formatter('[{asctime}] [{levelname:<8}] {name}: {message}', dt_fmt, style='{')
+file_handler.setFormatter(file_formatter)
 
+console_handler = logging.StreamHandler()
+if discord.utils.stream_supports_colour(console_handler.stream):
+    console_formatter = discord.utils._ColourFormatter()
+else:
+    console_formatter = file_formatter
 
-handler = logging.FileHandler(filename=f"{LOG_PATH}/forebot_{now_str}.log", encoding='utf-8', mode='w')
-handler.setFormatter(logging.Formatter('%(asctime)s:%(levelname)s:%(name)s: %(message)s'))
-logger.addHandler(handler)
+console_handler.setFormatter(console_formatter)
 
+logger.addHandler(file_handler)
+# logger.addHandler(console_handler) # discord logger already has console logger
+databaseLogger.addHandler(file_handler)
+databaseLogger.addHandler(console_handler)
 
 # ------------------ DATABASE ------------------
-Database.init_db(DB_FILE)
+Database.init_db(DB_FILE, databaseLogger)
+Database.attribute_update_all_users()
 # Database.dt_testing()
 # exit(0)
 
@@ -94,4 +109,5 @@ async def setup():
     await bot.add_cog(EasterEggs(bot, logger))
 
 asyncio.run(setup())
+
 bot.run(TOKEN)

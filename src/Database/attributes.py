@@ -1,5 +1,6 @@
 import discord
 
+ATTR_BASE_POINTS = 10
 
 ATTR_VITALITY = "vitality"
 ATTR_BRAWN = "brawn"
@@ -25,7 +26,7 @@ ATTR_LIST = {
     ATTR_WILLPOWER:      {"emoji": "🧘",    "description": "Reduces incoming Magic damage, chance to not faint on fatal damage, "
                           "and bonuses when maintaining claim streaks."},
     ATTR_ACCURACY:       {"emoji": "🎯",    "description": "Increases chance to land attacks and ???."},
-    ATTR_SPEED:          {"emoji": "⚡",    "description": "Determines turn order, and reduction on claim cool-downs."},
+    ATTR_SPEED:          {"emoji": "🏃",    "description": "Determines turn order, and reduction on claim cool-downs."},
     ATTR_LUCK:           {"emoji": "🍀",    "description": "Increases critical hit chance and loot quality chances."},
     ATTR_SMOOTH_TALKING: {"emoji": "🗣️",    "description": "Chance to distract or confuse enemies, and better deals with NPCs."},
 }
@@ -40,3 +41,25 @@ def build_attribute_embed(user: discord.Member, data, show_descriptions: bool):
     embed.set_footer(text=f"Unspent Points: {data['unspent_points']}")
     embed.set_thumbnail(url=user.display_avatar.url)
     return embed
+
+
+def get_bonus_points_upto_level(level: int) -> int:
+    total = ATTR_BASE_POINTS
+    for i in range(0, level + 1):
+        total += get_bonus_points_for_this_level(i)
+    return total
+
+
+def get_bonus_points_for_this_level(level: int) -> int:
+    if level == 0:
+        return 0
+    points: int = 1  # default 1 point
+    if level % 5 == 0:
+        points += 1
+    if level % 10 == 0:
+        points += 1
+    if level % 50 == 0:
+        points += 2
+    if level % 100 == 0:
+        points += 2
+    return points

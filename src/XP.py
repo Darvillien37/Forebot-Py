@@ -18,7 +18,7 @@ def __get_xp_from_message(message: str):
 
 def get_xp_threshold(currLvl, ret_float: bool = False):
     a = 3
-    b = 1.5
+    b = 2
     c = 100
     if ret_float:
         return (a * pow(currLvl, b)) + c
@@ -75,7 +75,7 @@ if __name__ == "__main__":
     import numpy as np
 
     # Generate x values (non-negative because of x^1.5)
-    x = np.linspace(0, 1000, 400)
+    x = np.linspace(0, 50, 400)
     y = get_xp_threshold(x, True)
 
     # Plot
