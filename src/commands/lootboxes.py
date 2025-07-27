@@ -5,21 +5,19 @@ import discord
 from datetime import datetime, timezone, timedelta
 from Utils.utils import DAILY, WEEKLY, MONTHLY, TIME_FORMAT
 
+TIME_DELTA = "time_delta"
+EMOJI = "emoji"
+
 
 class Lootboxes(commands.Cog):
 
     def __init__(self, bot, logger):
         self.bot = bot
         self.logger = logger
-        self.BOX_DELTAS = {
-            DAILY: timedelta(days=1),
-            WEEKLY: timedelta(weeks=1),
-            MONTHLY: timedelta(days=30),
-        }
-        self.DELTA_EMOJIS = {
-            DAILY: ":sunny:",
-            WEEKLY: ":seven:",
-            MONTHLY: ":calendar_spiral:"
+        self.CLAIM_TYPE_DATA = {
+            DAILY: {TIME_DELTA: timedelta(days=1), EMOJI: ":sunny:" },
+            WEEKLY: {TIME_DELTA: timedelta(weeks=1), EMOJI: ":seven:" },
+            MONTHLY: {TIME_DELTA: timedelta(days=30), EMOJI: ":calendar_spiral:" }
         }
 
     @commands.hybrid_command(aliases=['lootbox', 'boxes'], help="View and Claim your lootboxes.")
@@ -87,7 +85,7 @@ class Lootboxes(commands.Cog):
         embed.set_thumbnail(url=ctx.author.avatar.url if ctx.author.avatar else ctx.author.default_avatar.url)
         await msg.edit(content=None, embed=embed)
 
-    @commands.hybrid_command(help="Claim your Daily Weekly and Monthly Lootboxes!")
+    @commands.hybrid_command(help="Claim your Daily, Weekly, and Monthly Lootboxes!")
     async def claim(self, ctx: commands.Context):
         user_id = ctx.author.id
         embed = discord.Embed(
@@ -96,6 +94,39 @@ class Lootboxes(commands.Cog):
         embed.set_thumbnail(url=ctx.author.avatar.url if ctx.author.avatar else ctx.author.default_avatar.url)
 
         any_gained = False
+        # extract claim timestamp data from DB for all types
+        user_time_data = Database.get_claim_timestamps(user_id)
+        NOW = datetime.now(timezone.utc)
+        for period_type in self.BOX_DELTAS:
+            # x_streak, x_last_claim, x_claim_available_time, x_streak_expiry_time
+            # check if can claim
+            if NOW > user_time_data[period_type][AVAILABLE_TIME]:
+                # Can claim.
+                # Check to maintain streak.
+                if NOW > user_time_data[period_type][STREAK_EXPIRY_TIME]:
+                    # Expired maintaining streak
+                    user_time_data[period_type][STREAK] = 0
+                else:
+                    user_time_data[period_type][STREAK] += 1
+                
+                # set _last_claim to now()
+                user_time_data[period_type][LAST_CLAIM_TIME] = NOW
+        # -- calculate _claim_available_time (base 'type' cooldown +/- user attributes)
+        # -- calculate _streak_expiry_time (base 'type' grace +/- user attributes)
+        # -- update database claim timestamps
+        # -- handle claim 'type' with 'streak' (roll loot tier, give loot box)
+        # -- add field to embed: 
+        # --- claim 'type'
+        # --- rariaty gained
+        # --- next claim available ('countdown' at 'timestamp')
+        # --- keep streak by
+        # - else (cannot claim)
+        # -- add field to embed
+        # --- claim 'type'
+        # --- 'Too Early!'
+        # --- next claim available ('countdown' at 'timestamp')
+        # --- keep streak by ('countdown' at 'timestamp')
+
         for period_type in self.BOX_DELTAS:
             remaining = self.time_until_claim(user_id, period_type)
             if remaining.total_seconds() > 0:
