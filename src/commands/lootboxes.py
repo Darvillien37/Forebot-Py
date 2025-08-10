@@ -1,24 +1,32 @@
+import os
+import random
 from Database import Database, Items
+from Database.attributes import ATTR_LUCK
+from Utils import LootboxGraph
 from views.ClaimView import LootboxClaimView
 from discord.ext import commands
 import discord
 from datetime import datetime, timezone, timedelta
 from Utils.utils import DAILY, WEEKLY, MONTHLY, TIME_FORMAT
+from Utils.utils import LAST_CLAIM_TIME, CLAIM_READY_AT, STREAK_EXPIRY_AT, STREAK
+from commands import lootboxes as LB
+
 
 TIME_DELTA = "time_delta"
 EMOJI = "emoji"
+STREAK_GRACE_DELTA = "streak_grace"
+STREAK_BONUS_MULTI = "streak_bonus_multi"
+CLAIM_TYPE_DATA = {
+    DAILY: {TIME_DELTA: timedelta(days=1),    STREAK_GRACE_DELTA: timedelta(hours=6), STREAK_BONUS_MULTI: 0.01, EMOJI: ":sunny:"},
+    WEEKLY: {TIME_DELTA: timedelta(weeks=1),  STREAK_GRACE_DELTA: timedelta(days=1),  STREAK_BONUS_MULTI: 0.1,  EMOJI: ":seven:"},
+    MONTHLY: {TIME_DELTA: timedelta(days=30), STREAK_GRACE_DELTA: timedelta(days=3),  STREAK_BONUS_MULTI: 1,    EMOJI: ":calendar_spiral:"}
+}
 
 
 class Lootboxes(commands.Cog):
-
     def __init__(self, bot, logger):
         self.bot = bot
         self.logger = logger
-        self.CLAIM_TYPE_DATA = {
-            DAILY: {TIME_DELTA: timedelta(days=1), EMOJI: ":sunny:" },
-            WEEKLY: {TIME_DELTA: timedelta(weeks=1), EMOJI: ":seven:" },
-            MONTHLY: {TIME_DELTA: timedelta(days=30), EMOJI: ":calendar_spiral:" }
-        }
 
     @commands.hybrid_command(aliases=['lootbox', 'boxes'], help="View and Claim your lootboxes.")
     async def lootboxes(self, ctx):
@@ -95,51 +103,66 @@ class Lootboxes(commands.Cog):
 
         any_gained = False
         # extract claim timestamp data from DB for all types
+        # Dont forget: times in dictionary are a string, not datetime format
         user_time_data = Database.get_claim_timestamps(user_id)
+        user_attributes = Database.get_user_attributes(user_id)
         NOW = datetime.now(timezone.utc)
-        for period_type in self.BOX_DELTAS:
-            # x_streak, x_last_claim, x_claim_available_time, x_streak_expiry_time
-            # check if can claim
-            if NOW > user_time_data[period_type][AVAILABLE_TIME]:
+        for period_type in CLAIM_TYPE_DATA:
+            # x_streak, x_last_claim, x_claim_ready_at, x_streak_expiry_at
+            # Check if can claim
+            if user_time_data[period_type][CLAIM_READY_AT] is None:
+                ts_claim_ready_at = NOW
+            else:
+                ts_claim_ready_at = datetime.strptime(user_time_data[period_type][CLAIM_READY_AT], TIME_FORMAT).replace(tzinfo=timezone.utc)
+            if user_time_data[period_type][STREAK_EXPIRY_AT] is None:
+                ts_streak_expiry_at = NOW
+            else:
+                ts_streak_expiry_at = datetime.strptime(user_time_data[period_type][STREAK_EXPIRY_AT], TIME_FORMAT).replace(tzinfo=timezone.utc)
+
+            if NOW >= ts_claim_ready_at:
                 # Can claim.
                 # Check to maintain streak.
-                if NOW > user_time_data[period_type][STREAK_EXPIRY_TIME]:
-                    # Expired maintaining streak
+                streak_lost_str = ""
+                if NOW > ts_streak_expiry_at:
+                    # Expired streak
                     user_time_data[period_type][STREAK] = 0
+                    streak_lost_str = "Lost 😞 "  # need that space at the end of string
                 else:
                     user_time_data[period_type][STREAK] += 1
-                
-                # set _last_claim to now()
-                user_time_data[period_type][LAST_CLAIM_TIME] = NOW
-        # -- calculate _claim_available_time (base 'type' cooldown +/- user attributes)
-        # -- calculate _streak_expiry_time (base 'type' grace +/- user attributes)
-        # -- update database claim timestamps
-        # -- handle claim 'type' with 'streak' (roll loot tier, give loot box)
-        # -- add field to embed: 
-        # --- claim 'type'
-        # --- rariaty gained
-        # --- next claim available ('countdown' at 'timestamp')
-        # --- keep streak by
-        # - else (cannot claim)
-        # -- add field to embed
-        # --- claim 'type'
-        # --- 'Too Early!'
-        # --- next claim available ('countdown' at 'timestamp')
-        # --- keep streak by ('countdown' at 'timestamp')
 
-        for period_type in self.BOX_DELTAS:
-            remaining = self.time_until_claim(user_id, period_type)
-            if remaining.total_seconds() > 0:
-                embed.add_field(name=f"{self.DELTA_EMOJIS[period_type]} {period_type.title()}",
-                                value=format_timedelta(remaining), inline=False)
-            else:
+                # set x_last_claim to now()
+                user_time_data[period_type][LAST_CLAIM_TIME] = NOW.strftime(TIME_FORMAT)
+                # calculate time user can next claim this type, and time the streak expires
+                ts_next_time_avail = self.calculate_claim_time_available(NOW, period_type, user_attributes)
+                user_time_data[period_type][CLAIM_READY_AT] = ts_next_time_avail.strftime(TIME_FORMAT)
+                ts_streak_expiry_at = self.calculate_streak_expiry_time(ts_next_time_avail, period_type, user_attributes)
+                user_time_data[period_type][STREAK_EXPIRY_AT] = ts_streak_expiry_at.strftime(TIME_FORMAT)
+
+                # TIME TO ROLL
+                box_tier, _ = roll_lootbox_tier(period_type, user_time_data[period_type][STREAK], user_attributes)
+
+                Database.add_lootbox(user_id, box_tier)
+                Database.update_claim_timestamp(user_id, period_type, user_time_data[period_type])
                 any_gained = True
-                tier = Database.roll_loot_tier()
-                Database.add_lootbox(user_id, tier)
-                Database.update_claim_timestamp(user_id, period_type)
-                emoji = Items.LOOT_TIERS[tier]["emoji"]
-                embed.add_field(name=f"{self.DELTA_EMOJIS[period_type]} {period_type.title()}",
-                                value=f"{emoji} {tier.title()} Gained!", inline=False)
+                box_emoji = Items.LOOT_TIERS[box_tier]["emoji"]
+                embed.add_field(name=f"{CLAIM_TYPE_DATA[period_type][EMOJI]} {period_type.title()}",
+                                value=(
+                                    f"{box_emoji} {box_tier.title()} Gained!\n"
+                                    f"- Streak {streak_lost_str}{user_time_data[period_type][STREAK]}\n"
+                                    f"- Next Claim <t:{to_unix_timestamp(user_time_data[period_type][CLAIM_READY_AT])}:R>\n"
+                                    f"- Keep Streak by <t:{to_unix_timestamp(user_time_data[period_type][STREAK_EXPIRY_AT])}:R>"
+                                ),
+                                inline=True)
+            else:
+                # Cannot Claim
+                embed.add_field(name=f"{CLAIM_TYPE_DATA[period_type][EMOJI]} {period_type.title()}",
+                                value=(
+                                    f"Too Early!\n"
+                                    f"Streak **{user_time_data[period_type][STREAK]}**\n"
+                                    f"Next Claim <t:{to_unix_timestamp(user_time_data[period_type][CLAIM_READY_AT])}:R>\n"
+                                    f"Keep Streak by <t:{to_unix_timestamp(user_time_data[period_type][STREAK_EXPIRY_AT])}:R>"
+                                ),
+                                inline=True)
 
         if any_gained:
             embed.title = "🎁 Lootboxes Claimed!"
@@ -151,29 +174,67 @@ class Lootboxes(commands.Cog):
 
         await ctx.send(embed=embed)
 
-    def time_until_claim(self, user_id, period_type):
-        timestamps = Database.get_claim_timestamps(user_id)
-        if not timestamps or not timestamps[period_type]:
-            return timedelta(0)
+    @commands.hybrid_command(help="Check the chances of the next Lootbox you could get.")
+    async def claim_chances(self, ctx: commands.Context):
+        name, fig = LootboxGraph.get_graph(ctx.author.id)
+        image_name = f"{name}.png"
+        fig.savefig(image_name, dpi=300, bbox_inches='tight')
+        await ctx.send(file=discord.File(os.path.abspath(f'./{image_name}')))
+        os.remove(f'./{image_name}')
+        pass
 
-        last_dt = datetime.strptime(timestamps[period_type], TIME_FORMAT).replace(tzinfo=timezone.utc)
-        now = datetime.now(timezone.utc)
+    def calculate_claim_time_available(self, now: datetime, period_type: str, user_attributes) -> datetime:
+        return now + CLAIM_TYPE_DATA[period_type][TIME_DELTA]
 
-        delta = self.BOX_DELTAS[period_type]
-
-        next_time = last_dt + delta
-        remaining = next_time - now
-        return max(timedelta(0), remaining)
+    def calculate_streak_expiry_time(self, avail_at: datetime, period_type: str, user_attributes) -> datetime:
+        return avail_at + CLAIM_TYPE_DATA[period_type][STREAK_GRACE_DELTA]
 
 
-def format_timedelta(td: timedelta):
-    total_seconds = int(td.total_seconds())
-    hours, remainder = divmod(total_seconds, 3600)
-    minutes, seconds = divmod(remainder, 60)
-    if hours >= 24:
-        days, hours = divmod(hours, 24)
-        return f"{days}d {hours}h"
-    elif hours:
-        return f"{hours}h {minutes}m"
-    else:
-        return f"{minutes}m {seconds}s"
+def roll_lootbox_tier(period_type: str, streak: int, user_attributes):
+    weights = {}
+    for tier in Items.LOOT_TIERS:
+        weights[tier] = Items.LOOT_TIERS[tier]['weight']
+    # print(f"base Weights:\t\t{weights}")
+
+    # Apply period_type modifiers
+    for tier in Items.LOOT_TIERS:
+        if period_type == WEEKLY:
+            if tier in [Items.TIER_RARE, Items.TIER_EPIC, Items.TIER_LEGENDARY, Items.TIER_MYTHIC]:
+                weights[tier] *= 1.2
+        if period_type == MONTHLY:
+            if tier in [Items.TIER_EPIC, Items.TIER_LEGENDARY, Items.TIER_MYTHIC]:
+                weights[tier] *= 1.5
+    # print(f"period_type Weights:\t{weights}")
+
+    # apply streak
+    for tier in Items.LOOT_TIERS:
+        if tier not in [Items.TIER_COMMON, Items.TIER_UNCOMMON]:
+            weights[tier] *= min(100, 1 + (streak * LB.CLAIM_TYPE_DATA[period_type][STREAK_BONUS_MULTI]))
+    # print(f"streak Weights:\t\t{weights}")
+
+    # apply attribute modifiers
+    for tier in Items.LOOT_TIERS:
+        if tier == Items.TIER_COMMON:
+            weights[tier] *= (1 - (user_attributes[ATTR_LUCK] * 0.01))
+        if tier == Items.TIER_UNCOMMON:
+            weights[tier] *= (1 - (user_attributes[ATTR_LUCK] * 0.005))
+        elif tier in ["rare", "epic", "legendary", "mythic"]:
+            weights[tier] *= (1 + (user_attributes[ATTR_LUCK] * 0.005))
+        if user_attributes[ATTR_LUCK] >= 100:
+            if tier in ["legendary", "mythic"]:
+                weights[tier] *= (1 + (user_attributes[ATTR_LUCK] * 0.005))
+
+        if weights[tier] < 0:
+            weights[tier] = 0
+    # print(f"luck Weights:\t\t{weights}")
+
+    tiers = list(weights.keys())
+    w = list(weights.values())
+    chosen = random.choices(tiers, weights=w, k=1)[0]
+    # print(f"Chosen:{chosen}")
+    return chosen, weights
+
+
+def to_unix_timestamp(timestamp: str) -> int:
+    dt = datetime.strptime(timestamp, TIME_FORMAT)
+    return int(dt.timestamp())

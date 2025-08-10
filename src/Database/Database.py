@@ -5,8 +5,9 @@ import logging
 from Database import Items
 from Database import attributes
 from Database.attributes import ATTR_UNSPENT_POINTS, ATTR_VITALITY, ATTR_BRAWN, ATTR_DEXTERITY, ATTR_MIND, ATTR_RESILIENCE, ATTR_AWARENESS
-from Database.attributes import ATTR_WILLPOWER, ATTR_ACCURACY, ATTR_SPEED, ATTR_LUCK, ATTR_SMOOTH_TALKING
+from Database.attributes import ATTR_WILLPOWER, ATTR_ACCURACY, ATTR_SPEED, ATTR_LUCK, ATTR_SMOOTH_TALKING, ATTR_BASE_POINTS
 from Utils.utils import DAILY, WEEKLY, MONTHLY, TIME_FORMAT
+from Utils.utils import LAST_CLAIM_TIME, CLAIM_READY_AT, STREAK_EXPIRY_AT, STREAK
 
 
 _db_file = None
@@ -30,10 +31,25 @@ def init_db(db_file, logger: logging.Logger):
                         "xp": "INTEGER DEFAULT 0",
                         "level": "INTEGER DEFAULT 0",
                         "coins": "INTEGER DEFAULT 0",
-                        "last_daily": "TEXT DEFAULT NULL",
-                        "last_weekly": "TEXT DEFAULT NULL",
-                        "last_monthly": "TEXT DEFAULT NULL",
                         "last_voice_xp": "TEXT DEFAULT NULL"
+                        })
+    __ensure_table_and_columns("user_claims", {
+                        "user_id": "INTEGER PRIMARY KEY",
+                        f"{DAILY}_{LAST_CLAIM_TIME}": "TEXT DEFAULT NULL",
+                        f"{DAILY}_{CLAIM_READY_AT}": "TEXT DEFAULT NULL",
+                        f"{DAILY}_{STREAK_EXPIRY_AT}": "TEXT DEFAULT NULL",
+                        f"{DAILY}_{STREAK}": "INTEGER DEFAULT 0",
+                        f"{WEEKLY}_{LAST_CLAIM_TIME}": "TEXT DEFAULT NULL",
+                        f"{WEEKLY}_{CLAIM_READY_AT}": "TEXT DEFAULT NULL",
+                        f"{WEEKLY}_{STREAK_EXPIRY_AT}": "TEXT DEFAULT NULL",
+                        f"{WEEKLY}_{STREAK}": "INTEGER DEFAULT 0",
+                        f"{MONTHLY}_{LAST_CLAIM_TIME}": "TEXT DEFAULT NULL",
+                        f"{MONTHLY}_{CLAIM_READY_AT}": "TEXT DEFAULT NULL",
+                        f"{MONTHLY}_{STREAK_EXPIRY_AT}": "TEXT DEFAULT NULL",
+                        f"{MONTHLY}_{STREAK}": "INTEGER DEFAULT 0",
+                        },
+                        {
+                        "FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE"
                         })
 
     __ensure_table_and_columns("guilds", {
@@ -76,7 +92,7 @@ def init_db(db_file, logger: logging.Logger):
                         ATTR_SPEED: "INTEGER DEFAULT 0",
                         ATTR_LUCK: "INTEGER DEFAULT 0",
                         ATTR_SMOOTH_TALKING: "INTEGER DEFAULT 0",
-                        ATTR_UNSPENT_POINTS:  "INTEGER DEFAULT 10",
+                        ATTR_UNSPENT_POINTS:  f"INTEGER DEFAULT {ATTR_BASE_POINTS}",
                         },
                         {
                         "FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE"
@@ -196,6 +212,7 @@ def check_user(user_id):
         c = conn.cursor()
         c.execute("INSERT OR IGNORE INTO users (user_id) VALUES (?)", (user_id,))
         c.execute("INSERT OR IGNORE INTO user_attributes (user_id) VALUES (?)", (user_id,))
+        c.execute("INSERT OR IGNORE INTO user_claims (user_id) VALUES (?)", (user_id,))
         conn.commit()
 
 
@@ -454,22 +471,59 @@ def claim_specific_lootbox_old(user_id, tier):
 
 def get_claim_timestamps(user_id):
     check_user(user_id)
+    row = None
     with sqlite3.connect(_db_file) as conn:
         c = conn.cursor()
-        c.execute('SELECT last_daily, last_weekly, last_monthly FROM users WHERE user_id = ?', (user_id,))
+        columns = f"{DAILY}_{LAST_CLAIM_TIME}, "
+        columns += f"{DAILY}_{CLAIM_READY_AT}, "
+        columns += f"{DAILY}_{STREAK_EXPIRY_AT}, "
+        columns += f"{DAILY}_{STREAK}, "
+        columns += f"{WEEKLY}_{LAST_CLAIM_TIME}, "
+        columns += f"{WEEKLY}_{CLAIM_READY_AT}, "
+        columns += f"{WEEKLY}_{STREAK_EXPIRY_AT}, "
+        columns += f"{WEEKLY}_{STREAK}, "
+        columns += f"{MONTHLY}_{LAST_CLAIM_TIME}, "
+        columns += f"{MONTHLY}_{CLAIM_READY_AT}, "
+        columns += f"{MONTHLY}_{STREAK_EXPIRY_AT}, "
+        columns += f"{MONTHLY}_{STREAK}"
+        c.execute(f"SELECT {columns} FROM user_claims WHERE user_id = {user_id}",)
         row = c.fetchone()
-        if not row:
-            return None
-        return dict(zip([DAILY, WEEKLY, MONTHLY], row))
+    if not row:
+        return None
+    result = {
+        DAILY: {
+            LAST_CLAIM_TIME: row[0],
+            CLAIM_READY_AT: row[1],
+            STREAK_EXPIRY_AT: row[2],
+            STREAK: row[3],
+        },
+        WEEKLY: {
+            LAST_CLAIM_TIME: row[4],
+            CLAIM_READY_AT: row[5],
+            STREAK_EXPIRY_AT: row[6],
+            STREAK: row[7],
+        },
+        MONTHLY: {
+            LAST_CLAIM_TIME: row[8],
+            CLAIM_READY_AT: row[9],
+            STREAK_EXPIRY_AT: row[10],
+            STREAK: row[11],
+        }
+    }
+    return result
 
 
-def update_claim_timestamp(user_id, claim_type):
+def update_claim_timestamp(user_id: int, period_type: str, period_data):
     check_user(user_id)
-    now_str = datetime.now(timezone.utc).strftime(TIME_FORMAT)
-    col = f'last_{claim_type}'
+
+    columns = f"{period_type}_{LAST_CLAIM_TIME} = '{period_data[LAST_CLAIM_TIME]}', "
+    columns += f"{period_type}_{CLAIM_READY_AT} = '{period_data[CLAIM_READY_AT]}', "
+    columns += f"{period_type}_{STREAK_EXPIRY_AT} = '{period_data[STREAK_EXPIRY_AT]}', "
+    columns += f"{period_type}_{STREAK} = {period_data[STREAK]} "
+
     with sqlite3.connect(_db_file) as conn:
         c = conn.cursor()
-        c.execute(f'UPDATE users SET {col} = ? WHERE user_id = ?', (now_str, user_id))
+        c.execute(f'UPDATE user_claims SET {columns} WHERE user_id = {user_id}')
         conn.commit()
 
 

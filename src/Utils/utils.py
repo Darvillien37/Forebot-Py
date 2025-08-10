@@ -7,6 +7,11 @@ WEEKLY = "weekly"
 MONTHLY = "monthly"
 TIME_FORMAT = "%Y-%m-%d %H:%M:%S"
 
+LAST_CLAIM_TIME = "last_claim"
+CLAIM_READY_AT = "ready_at"
+STREAK_EXPIRY_AT = "streak_expiry_at"
+STREAK = "streak"
+
 
 def find_default_channel(user, guild: discord.Guild):
     channel_id = Database.get_guild_spam_channel_id(guild.id)
@@ -22,3 +27,4 @@ def find_default_channel(user, guild: discord.Guild):
                 channel = c
                 break
     return channel
+
