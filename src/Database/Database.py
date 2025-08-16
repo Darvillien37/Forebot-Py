@@ -13,6 +13,8 @@ from Utils.utils import LAST_CLAIM_TIME, CLAIM_READY_AT, STREAK_EXPIRY_AT, STREA
 _db_file = None
 _db_logger: logging.Logger = None
 
+BOT_GENERAL_KEY = 80085
+
 
 def roll_loot_tier():
     tiers = list(Items.LOOT_TIERS.keys())
@@ -26,6 +28,14 @@ def init_db(db_file, logger: logging.Logger):
     _db_file = db_file
     _db_logger = logger
     _db_logger.info("Initialising Database")
+    __ensure_table_and_columns("bot_general", {
+                        "key": "INTEGER PRIMARY KEY",
+                        "last_heartbeat": "TEXT DEFAULT NULL",
+    })
+    with sqlite3.connect(_db_file) as conn:
+        c = conn.cursor()
+        c.execute("INSERT OR IGNORE INTO bot_general (key) VALUES (?)", (BOT_GENERAL_KEY,))
+        conn.commit()
     __ensure_table_and_columns("users", {
                         "user_id": "INTEGER PRIMARY KEY",
                         "xp": "INTEGER DEFAULT 0",
@@ -205,6 +215,28 @@ def dt_testing():
             conn.commit()
 
 
+# ------------------ GENERAL BOT STUFF ------------------
+def update_heartbeat_timestamp():
+    global _db_file
+    with sqlite3.connect(_db_file) as conn:
+        now_str = datetime.now(timezone.utc).strftime(TIME_FORMAT)
+        c = conn.cursor()
+        c.execute(f'UPDATE bot_general SET last_heartbeat = "{now_str}" WHERE key = {BOT_GENERAL_KEY}')
+        conn.commit()
+
+
+def get_last_heartbeat():
+    global _db_file
+    with sqlite3.connect(_db_file) as conn:
+        c = conn.cursor()
+        c.execute(f'SELECT last_heartbeat FROM bot_general WHERE key = {BOT_GENERAL_KEY}')
+        hb_time = c.fetchone()
+    if hb_time is None:
+        return None
+    else:
+        return hb_time[0]
+
+
 # ------------------ USER STUFF ------------------
 def check_user(user_id):
     global _db_file
@@ -377,7 +409,6 @@ def clear_last_voice_xp(user_id):
 
 
 # ------------------ LOOTBOX STUFF ------------------
-
 def add_lootbox(user_id, tier):
     item_id = Items.LOOT_TIERS[tier]["box_id"]
     if item_id is not None:
@@ -511,6 +542,43 @@ def get_claim_timestamps(user_id):
         }
     }
     return result
+
+
+# returns dict containing streak expire times, in the format result[user_id][claim_type]
+def get_all_claim_streak_expires():
+    with sqlite3.connect(_db_file) as conn:
+        c = conn.cursor()
+        c.execute(f"SELECT user_id, {DAILY}_{STREAK_EXPIRY_AT}, {WEEKLY}_{STREAK_EXPIRY_AT}, {MONTHLY}_{STREAK_EXPIRY_AT} FROM user_claims")
+        rows = c.fetchall()
+    if not rows:
+        return None
+    else:
+        result = {}
+        for row in rows:
+            id = row[0]
+            result[id] = {}
+            result[id][DAILY] = row[1]
+            result[id][WEEKLY] = row[2]
+            result[id][MONTHLY] = row[3]
+        return result
+
+
+# takes dict containing streak expire times, in the format result[user_id][claim_type]
+def update_claim_streak_expires(streak_expires: dict):
+    with sqlite3.connect(_db_file) as conn:
+        c = conn.cursor()
+        for id in streak_expires:
+            if id is None:
+                continue
+            columns = []
+            for type in streak_expires[id]:
+                if streak_expires[id][type] is None:
+                    continue
+                columns.append(f"{type}_{STREAK_EXPIRY_AT} = '{streak_expires[id][type]}'")
+            if len(columns) > 0:
+                set = ', '.join(columns)
+                c.execute(f'UPDATE user_claims SET {set} WHERE user_id = {id}')
+            conn.commit()
 
 
 def update_claim_timestamp(user_id: int, period_type: str, period_data):

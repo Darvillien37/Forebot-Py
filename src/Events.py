@@ -1,26 +1,42 @@
+from logging import Logger
 import traceback
 import discord
 from discord.ext import commands
 import XP
 from Database import Database
+from commands import lootboxes
 
 
 class Events(commands.Cog):
     '''
     A Cog class for general discord bot event listeners
     '''
-    def __init__(self, bot: commands.bot, logger):
+    def __init__(self, bot: commands.Bot, logger: Logger):
         '''
         Constructor for the Cog General class.
         Keyword arguments:
         bot -- discord bot object.
         logger -- the logger to log to.
         '''
-        self.bot: commands.bot = bot
+        self.bot: commands.Bot = bot
         self.logger = logger
 
     @commands.Cog.listener()
+    async def on_connect(self):
+        self.logger.info("Connected")
+
+    @commands.Cog.listener()
+    async def on_resumed(self):
+        self.logger.info("Connected")
+
+    @commands.Cog.listener()
+    async def on_disconnect(self):
+        self.logger.info("Disconnected")
+
+    @commands.Cog.listener()
     async def on_ready(self):
+        self.logger.info("Ready")
+        lootboxes.streak_grace_recovery(self.logger)
         await self.bot.tree.sync()  # Sync the slash commands with Discord
         print(f'{self.bot.user} has connected to Discord!')
         print('Connected to guilds:')
@@ -36,7 +52,7 @@ class Events(commands.Cog):
                 print(f"Unknown User: {user_id[0]}")
 
     @commands.Cog.listener()
-    async def on_command_error(self, ctx, error):
+    async def on_command_error(self, ctx: commands.Context, error):
         # Get traceback info
         tb_lines = traceback.format_exception(type(error), error, error.__traceback__)
         tb_text = ''.join(tb_lines)

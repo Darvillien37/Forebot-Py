@@ -1,8 +1,10 @@
+from logging import Logger
 import os
 import random
 from Database import Database, Items
 from Database.attributes import ATTR_LUCK
 from Utils import LootboxGraph
+from Utils import utils
 from views.ClaimView import LootboxClaimView
 from discord.ext import commands
 import discord
@@ -24,7 +26,7 @@ CLAIM_TYPE_DATA = {
 
 
 class Lootboxes(commands.Cog):
-    def __init__(self, bot, logger):
+    def __init__(self, bot, logger: Logger):
         self.bot = bot
         self.logger = logger
 
@@ -149,8 +151,8 @@ class Lootboxes(commands.Cog):
                                 value=(
                                     f"{box_emoji} {box_tier.title()} Gained!\n"
                                     f"- Streak {streak_lost_str}{user_time_data[period_type][STREAK]}\n"
-                                    f"- Next Claim <t:{to_unix_timestamp(user_time_data[period_type][CLAIM_READY_AT])}:R>\n"
-                                    f"- Keep Streak by <t:{to_unix_timestamp(user_time_data[period_type][STREAK_EXPIRY_AT])}:R>"
+                                    f"- Next Claim <t:{utils.to_unix_timestamp(user_time_data[period_type][CLAIM_READY_AT])}:R>\n"
+                                    f"- Keep Streak by <t:{utils.to_unix_timestamp(user_time_data[period_type][STREAK_EXPIRY_AT])}:R>"
                                 ),
                                 inline=True)
             else:
@@ -159,8 +161,8 @@ class Lootboxes(commands.Cog):
                                 value=(
                                     f"Too Early!\n"
                                     f"Streak **{user_time_data[period_type][STREAK]}**\n"
-                                    f"Next Claim <t:{to_unix_timestamp(user_time_data[period_type][CLAIM_READY_AT])}:R>\n"
-                                    f"Keep Streak by <t:{to_unix_timestamp(user_time_data[period_type][STREAK_EXPIRY_AT])}:R>"
+                                    f"Next Claim <t:{utils.to_unix_timestamp(user_time_data[period_type][CLAIM_READY_AT])}:R>\n"
+                                    f"Keep Streak by <t:{utils.to_unix_timestamp(user_time_data[period_type][STREAK_EXPIRY_AT])}:R>"
                                 ),
                                 inline=True)
 
@@ -235,6 +237,50 @@ def roll_lootbox_tier(period_type: str, streak: int, user_attributes):
     return chosen, weights
 
 
-def to_unix_timestamp(timestamp: str) -> int:
-    dt = datetime.strptime(timestamp, TIME_FORMAT)
-    return int(dt.timestamp())
+# Streak grace period recovery system that accounts for bot downtime
+# so users aren’t unfairly punished for missing streaks due to the bot being offline.
+def streak_grace_recovery(logger: Logger):
+    # Get last heartbeat
+    last_hb_str = Database.get_last_heartbeat()
+    if not last_hb_str:
+        logger.error("[Streak Recovery] No last heartbeat found, skipping.")
+        return
+    last_hb = datetime.strptime(last_hb_str, TIME_FORMAT).replace(tzinfo=timezone.utc)
+    # calculate the downtime of the bot
+    now = datetime.now(timezone.utc)
+    downtime = now - last_hb
+    DOWNTIME_THRESHOLD = timedelta(hours=1.5)
+    if downtime <= DOWNTIME_THRESHOLD:
+        logger.debug("[Streak Recovery] Downtime below threshold, skipping.")
+        return
+    logger.info(f"[Streak Recovery] Downtime detected: {downtime}")
+
+    # Dont forget: times in dictionary are a string, not datetime format
+    streak_expires = Database.get_all_claim_streak_expires()
+    if streak_expires is None:
+        logger.debug("[Streak Recovery] No Claim Data Detected.")
+        return
+
+    updated_counters = {DAILY: 0, WEEKLY: 0, MONTHLY: 0}
+    data_updated = False
+
+    # loop through all data received and check...
+    for id in streak_expires:
+        if id is None:
+            continue
+        for type in streak_expires[id]:
+            if streak_expires[id][type] is None:
+                continue
+            expiry_ts = datetime.strptime(streak_expires[id][type], TIME_FORMAT).replace(tzinfo=timezone.utc)
+            # Check if the streak was missed purely because of downtime
+            if now > expiry_ts and last_hb < expiry_ts:
+                # add time between last_hb and the expiry time
+                new_deadline = now + (expiry_ts-last_hb)
+                streak_expires[id][type] = new_deadline.strftime(TIME_FORMAT)
+                updated_counters[type] = updated_counters[type] + 1
+                data_updated = True
+    logger.info("[Streak Recovery] Extended streak deadlines for "
+                f"{updated_counters[DAILY]} Daily, {updated_counters[WEEKLY]} Weekly, {updated_counters[MONTHLY]} Monthly.")
+
+    if data_updated:
+        Database.update_claim_streak_expires(streak_expires)

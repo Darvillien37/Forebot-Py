@@ -16,6 +16,7 @@ from commands.admin import Admin
 # from commands.owner import Owner
 from commands.user import User
 from commands.easterEggs import EasterEggs
+from loops.heartbeatLoop import HeartbeatLoop
 from loops.VoiceLoops import VoiceXPLoop
 
 
@@ -54,8 +55,10 @@ if not os.path.exists(RESOURCE_PATH):
 
 
 # ------------------ LOGGER ------------------
-logger = logging.getLogger('discord')
-logger.setLevel(logging.DEBUG)
+discordLogger = logging.getLogger('discord')
+discordLogger.setLevel(logging.DEBUG)
+forebotLogger = logging.getLogger('forebot')
+forebotLogger.setLevel(logging.DEBUG)
 databaseLogger = logging.getLogger('database')
 databaseLogger.setLevel(logging.DEBUG)
 
@@ -74,10 +77,12 @@ else:
 
 console_handler.setFormatter(console_formatter)
 
-logger.addHandler(file_handler)
+discordLogger.addHandler(file_handler)
 # logger.addHandler(console_handler) # discord logger already has console logger
 databaseLogger.addHandler(file_handler)
 databaseLogger.addHandler(console_handler)
+forebotLogger.addHandler(file_handler)
+forebotLogger.addHandler(console_handler)
 
 # ------------------ DATABASE ------------------
 Database.init_db(DB_FILE, databaseLogger)
@@ -95,18 +100,18 @@ bot = commands.Bot(command_prefix=PREFIX, case_insensitive=True, intents=intents
 
 
 async def setup():
-    # await bot.add_cog(StartUpLoops(bot, logger))
-    await bot.add_cog(Events(bot, logger))
-    await bot.add_cog(Greetings(bot, logger))
-    await bot.add_cog(Economy(bot, logger))
-    await bot.add_cog(Fun(bot, RESOURCE_PATH, logger))
-    await bot.add_cog(Lootboxes(bot, logger))
-    await bot.add_cog(VoiceXPLoop(bot, logger))
+    await bot.add_cog(VoiceXPLoop(bot, forebotLogger))
+    await bot.add_cog(HeartbeatLoop(bot, forebotLogger))
 
-    await bot.add_cog(Admin(bot, logger))
+    await bot.add_cog(Events(bot, forebotLogger))
+    # await bot.add_cog(Greetings(bot, forebotLogger))
+    await bot.add_cog(Economy(bot, forebotLogger))
+    await bot.add_cog(Fun(bot, RESOURCE_PATH, forebotLogger))
+    await bot.add_cog(Lootboxes(bot, forebotLogger))
+    await bot.add_cog(Admin(bot, forebotLogger))
     # await bot.add_cog(Owner(bot, logger))
-    await bot.add_cog(User(bot, logger))
-    await bot.add_cog(EasterEggs(bot, logger))
+    await bot.add_cog(User(bot, forebotLogger))
+    await bot.add_cog(EasterEggs(bot, forebotLogger))
 
 asyncio.run(setup())
 

@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 import discord
 
 from Database import Database
@@ -28,3 +29,7 @@ def find_default_channel(user, guild: discord.Guild):
                 break
     return channel
 
+
+def to_unix_timestamp(timestamp: str) -> int:
+    dt = datetime.strptime(timestamp, TIME_FORMAT).replace(tzinfo=timezone.utc)
+    return int(dt.timestamp())
